@@ -1,0 +1,4093 @@
+<!DOCTYPE html>
+<html lang="nl" class="dark">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>CourtSide Hub — Spoiler-Vrije NBA Hub</title>
+  <meta name="description" content="Persoonlijke, advertentievrije NBA hub voor mobiel, desktop en Google TV met spoiler-vrije modus, YouTube theater speler, Podcast Hub en offline PWA-ondersteuning." />
+  <meta property="og:title" content="CourtSide Hub — Spoiler-Vrije NBA Hub" />
+  <meta property="og:description" content="Persoonlijke, advertentievrije NBA hub voor mobiel, desktop en Google TV met spoiler-vrije modus, YouTube theater speler, Podcast Hub en offline PWA-ondersteuning." />
+  <meta property="og:type" content="website" />
+
+  <!-- PWA Manifest & Mobiele / Smart TV Integratie -->
+  <link rel="manifest" href="manifest.json" />
+  <meta name="theme-color" content="#121212" />
+  <meta name="mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-capable" content="yes" />
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+  <meta name="apple-mobile-web-app-title" content="CourtSide" />
+  <link rel="apple-touch-icon" href="apple-touch-icon.png" />
+  <link rel="icon" type="image/svg+xml" href="icon.svg" />
+
+  <!-- Cloudflare Web Analytics (Cookie-vrij & Lichtgewicht) -->
+  <!-- Vervang 'YOUR_CLOUDFLARE_WEB_ANALYTICS_TOKEN' door je eigen token uit het Cloudflare dashboard -->
+  <script defer src="https://static.cloudflareinsights.com/beacon.min.js" data-cf-beacon='{"token": "YOUR_CLOUDFLARE_WEB_ANALYTICS_TOKEN"}'></script>
+  <!-- Einde Cloudflare Web Analytics -->
+
+  <!-- Google Fonts: Roboto & Roboto Mono voor strakke leesbaarheid en tabular numerals -->
+  <link rel="preconnect" href="https://fonts.googleapis.com" />
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin />
+  <link href="https://fonts.googleapis.com/css2?family=Roboto+Mono:wght@500;700&family=Roboto:wght@400;500;700;900&display=swap" rel="stylesheet" />
+
+  <!-- Tailwind CSS via CDN (100% statisch te hosten op GitHub Pages) -->
+  <script src="https://cdn.tailwindcss.com"></script>
+  <script>
+    tailwind.config = {
+      darkMode: 'class',
+      theme: {
+        extend: {
+          fontFamily: {
+            sans: ['Roboto', 'system-ui', '-apple-system', 'sans-serif'],
+            mono: ['Roboto Mono', 'monospace'],
+          },
+          colors: {
+            surface: {
+              darkBg: '#121212',
+              darkCard: '#1E1E1E',
+              darkElevated: '#262626',
+              lightBg: '#F3F4F6',
+              lightCard: '#FFFFFF',
+            }
+          }
+        }
+      }
+    };
+  </script>
+
+  <style>
+    /* ==========================================================================
+       1. DESIGN TOKENS & TEAM BRANDING VARIABELEN
+       ========================================================================== */
+    :root {
+      --team-accent: #3B82F6;
+      --team-accent-secondary: #1D4ED8;
+      --team-accent-glow: rgba(59, 130, 246, 0.45);
+      --team-accent-soft: rgba(59, 130, 246, 0.14);
+      --team-accent-contrast: #FFFFFF;
+
+      --bg-canvas: #F3F4F6;
+      --bg-card: #FFFFFF;
+      --bg-elevated: #F9FAFB;
+      --bg-header: rgba(255, 255, 255, 0.92);
+      --border-subtle: rgba(15, 23, 42, 0.10);
+      --text-primary: #111827;
+      --text-secondary: #4B5563;
+      --text-muted: #6B7280;
+      --transition-fast: 160ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    html.dark {
+      --bg-canvas: #121212;
+      --bg-card: #1E1E1E;
+      --bg-elevated: #27272A;
+      --bg-header: rgba(18, 18, 18, 0.92);
+      --border-subtle: rgba(255, 255, 255, 0.08);
+      --text-primary: #F4F4F5;
+      --text-secondary: #A1A1AA;
+      --text-muted: #71717A;
+    }
+
+    /* ==========================================================================
+       2. BASIS TYPOGRAFIE & LAYOUT FOUNDATIONS
+       ========================================================================== */
+    * {
+      box-sizing: border-box;
+    }
+
+    html {
+      font-family: 'Roboto', system-ui, -apple-system, sans-serif;
+      scroll-behavior: smooth;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    body {
+      background-color: var(--bg-canvas);
+      color: var(--text-primary);
+      transition: background-color var(--transition-fast), color var(--transition-fast);
+      min-height: 100vh;
+      margin: 0;
+    }
+
+    body.modal-open {
+      overflow: hidden;
+    }
+
+    body.miniplayer-active {
+      padding-bottom: 6.75rem;
+    }
+
+    .tabular-nums {
+      font-variant-numeric: tabular-nums;
+    }
+
+    /* ==========================================================================
+       3. HEADER BRANDING LIJN, NAVIGATIE & TEAM ACCENTEN
+       ========================================================================== */
+    .header-glass {
+      background-color: var(--bg-header);
+      backdrop-filter: blur(12px);
+      -webkit-backdrop-filter: blur(12px);
+    }
+
+    .team-brand-line {
+      height: 3px;
+      width: 100%;
+      background: linear-gradient(90deg, var(--team-accent) 0%, var(--team-accent-secondary) 60%, transparent 100%);
+      transition: background 240ms ease;
+    }
+
+    .btn-team-accent {
+      background-color: var(--team-accent);
+      color: var(--team-accent-contrast);
+      transition: transform var(--transition-fast), filter var(--transition-fast), background-color 220ms ease;
+    }
+
+    .btn-team-accent:hover {
+      filter: brightness(1.1);
+    }
+
+    .btn-team-accent:active {
+      transform: scale(0.98);
+    }
+
+    .tab-active {
+      background-color: var(--team-accent-soft) !important;
+      color: var(--team-accent) !important;
+      border-color: var(--team-accent) !important;
+    }
+
+    /* ==========================================================================
+       4. KAART STIJLEN, INSTANT CLASSIC BADGES & WATCH LATER DRAG-AND-DROP
+       ========================================================================== */
+    .hub-card {
+      background-color: var(--bg-card);
+      border: 1px solid var(--border-subtle);
+      transition: transform var(--transition-fast), border-color var(--transition-fast), box-shadow var(--transition-fast), background-color var(--transition-fast);
+    }
+
+    .hub-card:hover {
+      border-color: rgba(255, 255, 255, 0.16);
+    }
+
+    html:not(.dark) .hub-card:hover {
+      border-color: rgba(15, 23, 42, 0.22);
+    }
+
+    .hub-card.is-favorite-matchup {
+      border-color: var(--team-accent);
+      box-shadow: inset 0 0 0 1px var(--team-accent-soft);
+    }
+
+    .score-box {
+      transition: opacity 180ms ease, filter 180ms ease, transform 180ms ease;
+    }
+
+    .score-masked {
+      letter-spacing: 0.18em;
+      user-select: none;
+    }
+
+    .watchlist-item {
+      transition: transform var(--transition-fast), border-color var(--transition-fast), opacity var(--transition-fast);
+    }
+
+    .watchlist-item.is-dragging {
+      opacity: 0.45;
+      transform: scale(0.99);
+    }
+
+    .watchlist-item.drag-over {
+      border-color: var(--team-accent) !important;
+      box-shadow: 0 0 0 2px var(--team-accent-soft);
+    }
+
+    /* Instant Classic Badges */
+    .classic-badge {
+      display: inline-flex;
+      align-items: center;
+      gap: 0.375rem;
+      padding: 0.2rem 0.6rem;
+      border-radius: 0.45rem;
+      font-size: 0.75rem;
+      font-weight: 700;
+      letter-spacing: 0.01em;
+      white-space: nowrap;
+      border: 1px solid rgba(245, 158, 11, 0.35);
+      background-color: rgba(245, 158, 11, 0.14);
+      color: #FBBF24;
+    }
+
+    .classic-badge--buzzer {
+      border-color: rgba(56, 189, 248, 0.38);
+      background-color: rgba(56, 189, 248, 0.14);
+      color: #38BDF8;
+    }
+
+    .classic-badge--fifty {
+      border-color: rgba(244, 114, 182, 0.38);
+      background-color: rgba(244, 114, 182, 0.14);
+      color: #F472B6;
+    }
+
+    .classic-badge--comeback {
+      border-color: rgba(52, 211, 153, 0.38);
+      background-color: rgba(52, 211, 153, 0.14);
+      color: #34D399;
+    }
+
+    html:not(.dark) .classic-badge {
+      color: #B45309;
+      background-color: rgba(245, 158, 11, 0.12);
+    }
+    html:not(.dark) .classic-badge--buzzer {
+      color: #0369A1;
+      background-color: rgba(14, 165, 233, 0.12);
+    }
+    html:not(.dark) .classic-badge--fifty {
+      color: #BE185D;
+      background-color: rgba(236, 72, 153, 0.12);
+    }
+    html:not(.dark) .classic-badge--comeback {
+      color: #047857;
+      background-color: rgba(16, 185, 129, 0.12);
+    }
+
+    /* ==========================================================================
+       5. MODALS & PERSISTENTE PODCAST MINI-PLAYER
+       ========================================================================== */
+    .modal-backdrop {
+      background-color: rgba(0, 0, 0, 0.84);
+      backdrop-filter: blur(8px);
+      -webkit-backdrop-filter: blur(8px);
+      animation: fadeInFast 160ms ease-out;
+    }
+
+    .modal-surface {
+      background-color: #1E1E1E;
+      color: #F4F4F5;
+      border: 1px solid rgba(255, 255, 255, 0.10);
+      animation: scaleInFast 180ms cubic-bezier(0.16, 1, 0.3, 1);
+    }
+
+    .theater-video-wrap {
+      position: relative;
+      width: 100%;
+      aspect-ratio: 16 / 9;
+      background-color: #000000;
+      overflow: hidden;
+    }
+
+    .theater-video-wrap iframe,
+    .theater-video-wrap #yt-player-mount {
+      position: absolute;
+      inset: 0;
+      width: 100%;
+      height: 100%;
+      border: 0;
+    }
+
+    .theater-modal-shell.is-tv-fullscreen {
+      padding: 0 !important;
+    }
+
+    .theater-modal-shell.is-tv-fullscreen .theater-dialog {
+      max-width: 100vw !important;
+      width: 100vw !important;
+      height: 100vh !important;
+      max-height: 100vh !important;
+      border-radius: 0 !important;
+      border: none !important;
+    }
+
+    .theater-modal-shell.is-tv-fullscreen .theater-video-wrap {
+      flex: 1 1 auto;
+      aspect-ratio: auto;
+      height: 100%;
+    }
+
+    input[type="range"].hub-range {
+      accent-color: var(--team-accent);
+      cursor: pointer;
+    }
+
+    @keyframes fadeInFast {
+      from { opacity: 0; }
+      to { opacity: 1; }
+    }
+
+    @keyframes scaleInFast {
+      from { opacity: 0; transform: scale(0.98) translateY(6px); }
+      to { opacity: 1; transform: scale(1) translateY(0); }
+    }
+
+    /* ==========================================================================
+       6. TV D-PAD / TOETSENBORD FOCUS GLOW & NAVIGATIE
+       ========================================================================== */
+    [data-dpad]:focus-visible,
+    [data-dpad].dpad-focused {
+      outline: none !important;
+      border-color: var(--team-accent) !important;
+      box-shadow:
+        0 0 0 2px var(--bg-canvas),
+        0 0 0 4px var(--team-accent),
+        0 0 22px 2px var(--team-accent-glow) !important;
+      transform: translateY(-1px);
+    }
+
+    select[data-dpad]:focus,
+    input[data-dpad]:focus {
+      outline: none;
+      border-color: var(--team-accent);
+      box-shadow: 0 0 0 3px var(--team-accent-glow);
+    }
+
+    /* ==========================================================================
+       7. GOOGLE TV / 10-FOOT UI BREAKPOINT (>= 1920px) & TV PREVIEW MODUS
+       ========================================================================== */
+    @media (min-width: 1920px) {
+      html {
+        font-size: 20px;
+      }
+
+      .tv-container {
+        max-width: 1760px !important;
+        padding-left: 4rem !important;
+        padding-right: 4rem !important;
+      }
+
+      .tv-grid {
+        gap: 2rem !important;
+      }
+
+      .hub-card {
+        padding: 2rem !important;
+        border-radius: 1.25rem !important;
+      }
+
+      .theater-modal-shell {
+        padding: 0 !important;
+      }
+
+      .theater-dialog {
+        max-width: 100vw !important;
+        width: 100vw !important;
+        height: 100vh !important;
+        max-height: 100vh !important;
+        border-radius: 0 !important;
+        border: none !important;
+      }
+
+      .theater-video-wrap {
+        flex: 1 1 auto;
+        aspect-ratio: auto;
+        height: 100%;
+      }
+
+      [data-dpad]:focus-visible,
+      [data-dpad].dpad-focused {
+        transform: scale(1.015);
+        box-shadow:
+          0 0 0 3px var(--bg-canvas),
+          0 0 0 6px var(--team-accent),
+          0 0 32px 6px var(--team-accent-glow) !important;
+      }
+    }
+
+    body.tv-mode-active {
+      font-size: 1.08rem;
+    }
+
+    body.tv-mode-active [data-dpad]:focus-visible,
+    body.tv-mode-active [data-dpad].dpad-focused {
+      transform: scale(1.015);
+      box-shadow:
+        0 0 0 3px var(--bg-canvas),
+        0 0 0 6px var(--team-accent),
+        0 0 28px 4px var(--team-accent-glow) !important;
+    }
+
+    @media (prefers-reduced-motion: reduce) {
+      *, *::before, *::after {
+        transition-duration: 0.01ms !important;
+        animation-duration: 0.01ms !important;
+      }
+    }
+  </style>
+</head>
+<body class="antialiased selection:bg-blue-500/30">
+
+  <!-- ========================================================================
+       OFFLINE STATUS BANNER (ALLEEN ZICHTBAAR ZONDER INTERNET)
+       ======================================================================== -->
+  <div id="offline-banner" class="hidden bg-amber-500/15 border-b border-amber-500/30 px-4 py-2 text-center text-xs font-medium text-amber-300">
+    Offline Modus actief — De basisschil is lokaal geladen vanuit de Service Worker cache.
+  </div>
+
+  <!-- ========================================================================
+       HEADER, NAVIGATIE & TEAM BRANDING LIJN
+       ======================================================================== -->
+  <header class="sticky top-0 z-40 header-glass border-b border-[var(--border-subtle)]">
+    <div class="tv-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+      <div class="flex flex-wrap items-center justify-between gap-3 py-3 sm:py-3.5">
+
+        <!-- Zone 1: Brand Wordmark -->
+        <div class="flex items-center gap-3 shrink-0">
+          <div class="w-9 h-9 rounded-lg flex items-center justify-center shrink-0 transition-colors duration-200"
+               style="background-color: var(--team-accent-soft); color: var(--team-accent);"
+               aria-hidden="true">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.1" stroke-linecap="round" stroke-linejoin="round">
+              <circle cx="12" cy="12" r="9.5"></circle>
+              <path d="M12 2.5v19"></path>
+              <path d="M2.5 12h19"></path>
+              <path d="M5.5 5.5c3.2 3.2 3.2 9.8 0 13"></path>
+              <path d="M18.5 5.5c-3.2 3.2-3.2 9.8 0 13"></path>
+            </svg>
+          </div>
+          <span class="text-lg sm:text-xl font-bold tracking-tight whitespace-nowrap" style="color: var(--text-primary);">
+            CourtSide Hub
+          </span>
+        </div>
+
+        <!-- Zone 2: Primaire Sectie-Navigatie (Wedstrijden | Podcasts | Watch Later) -->
+        <nav class="order-3 md:order-2 w-full md:w-auto flex items-center gap-1.5 sm:gap-2 overflow-x-auto pb-1 md:pb-0" aria-label="Hoofdnavigatie">
+          <button type="button" data-view="games" data-dpad="nav"
+                  class="view-tab min-h-[40px] px-3.5 py-1.5 rounded-lg text-sm font-medium border border-[var(--border-subtle)] whitespace-nowrap shrink-0 cursor-pointer transition-colors">
+            Wedstrijden
+          </button>
+          <button type="button" data-view="podcasts" data-dpad="nav"
+                  class="view-tab min-h-[40px] px-3.5 py-1.5 rounded-lg text-sm font-medium border border-[var(--border-subtle)] whitespace-nowrap shrink-0 cursor-pointer transition-colors">
+            Podcasts (<span id="nav-podcast-count">0</span>)
+          </button>
+          <button type="button" data-view="watchlist" data-dpad="nav"
+                  class="view-tab min-h-[40px] px-3.5 py-1.5 rounded-lg text-sm font-medium border border-[var(--border-subtle)] whitespace-nowrap shrink-0 cursor-pointer transition-colors">
+            Watch Later (<span id="nav-watchlist-count">0</span>)
+          </button>
+        </nav>
+
+        <!-- Zone 3: Team Branding + Spoiler Toggle + PWA Install + Instellingen + Thema -->
+        <div class="order-2 md:order-3 flex flex-wrap items-center gap-2 ml-auto">
+          <div class="relative">
+            <label for="team-selector" class="sr-only">Kies favoriet NBA-team</label>
+            <select id="team-selector"
+                    data-dpad="header"
+                    class="min-h-[42px] pl-3 pr-7 py-2 rounded-lg text-xs sm:text-sm font-medium border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-primary)] cursor-pointer transition-colors max-w-[140px] sm:max-w-[190px] truncate">
+            </select>
+          </div>
+
+          <button id="global-spoiler-btn"
+                  type="button"
+                  data-dpad="header"
+                  aria-pressed="true"
+                  class="min-h-[42px] px-3 py-2 rounded-lg text-xs sm:text-sm font-medium border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer transition-colors">
+            <span id="global-spoiler-icon" aria-hidden="true"></span>
+            <span id="global-spoiler-label" class="hidden sm:inline">Scores Verborgen</span>
+          </button>
+
+          <!-- In-App PWA Installatieknop (automatisch zichtbaar indien installeerbaar) -->
+          <button id="header-pwa-install-btn"
+                  type="button"
+                  data-dpad="header"
+                  class="hidden btn-team-accent min-h-[42px] px-3 py-2 rounded-lg text-xs font-semibold items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer">
+            <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+              <polyline points="7 10 12 15 17 10"></polyline>
+              <line x1="12" y1="15" x2="12" y2="3"></line>
+            </svg>
+            <span class="hidden sm:inline">Installeer</span>
+          </button>
+
+          <!-- Instellingen / Beheerpaneel Tandwiel -->
+          <button id="settings-open-btn"
+                  type="button"
+                  data-dpad="header"
+                  aria-label="Instellingen, kanalen en backup beheren"
+                  title="Instellingen &amp; Backup"
+                  class="min-h-[42px] min-w-[42px] px-2.5 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center shrink-0 cursor-pointer transition-colors">
+            <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <circle cx="12" cy="12" r="3"></circle>
+              <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1 0 2.83 2 2 0 0 1-2.83 0l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-2 2 2 2 0 0 1-2-2v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83 0 2 2 0 0 1 0-2.83l.06-.06a1.65 1.65 0 0 0 .33-1.82 1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1-2-2 2 2 0 0 1 2-2h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 0-2.83 2 2 0 0 1 2.83 0l.06.06a1.65 1.65 0 0 0 1.82.33H9a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 2-2 2 2 0 0 1 2 2v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 0 2 2 0 0 1 0 2.83l-.06.06a1.65 1.65 0 0 0-.33 1.82V9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 2 2 2 2 0 0 1-2 2h-.09a1.65 1.65 0 0 0-1.51 1z"></path>
+            </svg>
+          </button>
+
+          <!-- Dark / Light Mode Toggle -->
+          <button id="theme-toggle-btn"
+                  type="button"
+                  data-dpad="header"
+                  aria-label="Wissel tussen donkere en lichte modus"
+                  class="min-h-[42px] min-w-[42px] px-2.5 py-2 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center shrink-0 cursor-pointer transition-colors">
+            <span id="theme-icon" aria-hidden="true"></span>
+          </button>
+        </div>
+
+      </div>
+    </div>
+    <div class="team-brand-line" aria-hidden="true"></div>
+  </header>
+
+  <!-- ========================================================================
+       HOOFDINHOUD: 3 MODULAIRE VIEWS (WEDSTRIJDEN, PODCASTS, WATCH LATER)
+       ======================================================================== -->
+  <main class="tv-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
+
+    <!-- Actieve Team Banner -->
+    <div id="selected-team-bar" class="hidden mb-6 px-4 py-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-card)] flex flex-wrap items-center justify-between gap-3">
+      <div class="flex items-center gap-3">
+        <span id="selected-team-swatch" class="w-3 h-3 rounded-sm shrink-0"></span>
+        <p class="text-sm font-medium" style="color: var(--text-primary);">
+          Actieve team-branding: <strong id="selected-team-name" class="font-bold"></strong>
+          <span class="text-xs ml-2" style="color: var(--text-muted);" id="selected-team-conference"></span>
+        </p>
+      </div>
+      <button id="reset-team-btn"
+              type="button"
+              data-dpad="banner"
+              class="min-h-[36px] px-3 py-1 rounded-md text-xs font-medium border border-[var(--border-subtle)] hover:bg-black/5 dark:hover:bg-white/5 cursor-pointer transition-colors">
+        Reset naar neutraal
+      </button>
+    </div>
+
+    <!-- ====================================================================
+         VIEW 1: WEDSTRIJDEN & RECAPS
+         ==================================================================== -->
+    <div id="view-games" class="app-view">
+      <section class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6">
+        <div>
+          <div class="flex flex-wrap items-center gap-2 text-xs sm:text-sm font-medium mb-1" style="color: var(--text-muted);">
+            <span id="feed-status-text">Live NBA YouTube RSS</span>
+            <span aria-hidden="true">·</span>
+            <span id="refresh-interval-badge">Auto-verversing: elke 30 min</span>
+          </div>
+          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight" style="text-wrap: balance;">
+            Wedstrijden &amp; Recaps
+          </h1>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <label for="feed-source-selector" class="sr-only">Kies recap databron</label>
+          <select id="feed-source-selector"
+                  data-dpad="filter"
+                  class="min-h-[40px] px-3 py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-[var(--border-subtle)] bg-[var(--bg-elevated)] text-[var(--text-primary)] cursor-pointer">
+          </select>
+
+          <button id="refresh-feed-btn"
+                  type="button"
+                  data-dpad="filter"
+                  class="min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer transition-colors">
+            <svg id="refresh-spinner-icon" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+              <path d="M21 3v5h-5"></path>
+            </svg>
+            <span>Vernieuw RSS</span>
+          </button>
+        </div>
+      </section>
+
+      <section class="flex flex-wrap items-center justify-between gap-3 mb-6 sm:mb-8 pb-4 border-b border-[var(--border-subtle)]"
+               role="toolbar"
+               aria-label="Filter wedstrijden">
+        <div class="flex flex-wrap items-center gap-2">
+          <button type="button" data-filter="all" data-dpad="filter"
+                  class="filter-tab min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-[var(--border-subtle)] whitespace-nowrap shrink-0 cursor-pointer transition-colors">
+            Alle (<span id="count-all">0</span>)
+          </button>
+          <button type="button" data-filter="classics" data-dpad="filter"
+                  class="filter-tab min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-[var(--border-subtle)] whitespace-nowrap shrink-0 cursor-pointer transition-colors">
+            Instant Classics (<span id="count-classics">0</span>)
+          </button>
+          <button type="button" data-filter="unwatched" data-dpad="filter"
+                  class="filter-tab min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-[var(--border-subtle)] whitespace-nowrap shrink-0 cursor-pointer transition-colors">
+            Onbekeken (<span id="count-unwatched">0</span>)
+          </button>
+        </div>
+
+        <button id="tv-mode-btn"
+                type="button"
+                data-dpad="filter"
+                aria-pressed="false"
+                title="Test 10-foot Google TV D-Pad focusweergave en fullscreen speler"
+                class="min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-1.5 whitespace-nowrap shrink-0 cursor-pointer transition-colors">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <rect x="2" y="7" width="20" height="15" rx="2" ry="2"></rect>
+            <polyline points="17 2 12 7 7 2"></polyline>
+          </svg>
+          <span>TV Focus</span>
+        </button>
+      </section>
+
+      <section id="games-grid"
+               class="tv-grid grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6"
+               aria-live="polite">
+      </section>
+
+      <div id="empty-state" class="hidden py-16 px-4 text-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+        <p class="text-lg font-semibold mb-1">Geen wedstrijden in deze selectie</p>
+        <p class="text-sm mb-5" style="color: var(--text-secondary);">
+          Pas je filter aan of schakel terug naar alle wedstrijden.
+        </p>
+        <button id="clear-filter-btn"
+                type="button"
+                data-dpad="empty"
+                class="btn-team-accent min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-medium cursor-pointer">
+          Toon alle wedstrijden
+        </button>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         VIEW 2: PODCAST HUB (MET TREFWOORD-FILTER & AUDIO/YOUTUBE KEUZE)
+         ==================================================================== -->
+    <div id="view-podcasts" class="app-view hidden">
+      <section class="flex flex-col lg:flex-row lg:items-end justify-between gap-4 mb-6 pb-4 border-b border-[var(--border-subtle)]">
+        <div>
+          <p class="text-xs sm:text-sm font-medium mb-1" style="color: var(--text-muted);" id="podcast-status-text">
+            Gefilterd op trefwoord · Audio (Mini-Player) &amp; Video (Theater)
+          </p>
+          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
+            Podcast Hub
+          </h1>
+        </div>
+
+        <div class="flex flex-wrap items-center gap-2">
+          <button id="podcast-open-settings-btn"
+                  type="button"
+                  data-dpad="podcast-filter"
+                  class="min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-black/5 dark:hover:bg-white/5 whitespace-nowrap shrink-0 cursor-pointer transition-colors">
+            Beheer Feeds &amp; Filters
+          </button>
+          <button id="refresh-podcasts-btn"
+                  type="button"
+                  data-dpad="podcast-filter"
+                  class="min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-black/5 dark:hover:bg-white/5 flex items-center gap-2 whitespace-nowrap shrink-0 cursor-pointer transition-colors">
+            <svg id="podcast-spinner-icon" class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M21 12a9 9 0 1 1-9-9c2.52 0 4.93 1 6.74 2.74L21 8"></path>
+              <path d="M21 3v5h-5"></path>
+            </svg>
+            <span>Vernieuw Podcasts</span>
+          </button>
+        </div>
+      </section>
+
+      <section id="podcasts-grid" class="tv-grid grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6" aria-live="polite">
+      </section>
+
+      <div id="podcasts-empty" class="hidden py-16 px-4 text-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+        <p class="text-lg font-semibold mb-1">Geen afleveringen gevonden voor het actieve trefwoord-filter</p>
+        <p class="text-sm mb-5" style="color: var(--text-secondary);">
+          Controleer het trefwoord-filter in Instellingen of vernieuw de podcast-feeds.
+        </p>
+      </div>
+    </div>
+
+    <!-- ====================================================================
+         VIEW 3: DRAG-AND-DROP "WATCH LATER" WACHTRIJ
+         ==================================================================== -->
+    <div id="view-watchlist" class="app-view hidden">
+      <section class="flex flex-col sm:flex-row sm:items-end justify-between gap-4 mb-6 pb-4 border-b border-[var(--border-subtle)]">
+        <div>
+          <p class="text-xs sm:text-sm font-medium mb-1" style="color: var(--text-muted);">
+            Sleep kaarten (Drag &amp; Drop) of gebruik de pijltjes om je kijkvolgorde te bepalen
+          </p>
+          <h1 class="text-2xl sm:text-3xl font-bold tracking-tight">
+            Watch Later Wachtrij
+          </h1>
+        </div>
+        <div class="flex items-center gap-2">
+          <button id="clear-watchlist-btn"
+                  type="button"
+                  data-dpad="watchlist"
+                  class="min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-black/5 dark:hover:bg-white/5 whitespace-nowrap cursor-pointer transition-colors">
+            Wachtrij Legen
+          </button>
+        </div>
+      </section>
+
+      <section id="watchlist-container" class="flex flex-col gap-3 sm:gap-4" aria-live="polite">
+      </section>
+
+      <div id="watchlist-empty" class="hidden py-16 px-4 text-center rounded-2xl border border-[var(--border-subtle)] bg-[var(--bg-card)]">
+        <p class="text-lg font-semibold mb-1">Je Watch Later wachtrij is leeg</p>
+        <p class="text-sm mb-5" style="color: var(--text-secondary);">
+          Klik op het bladwijzer-icoon bij een wedstrijd om deze aan je persoonlijke afspeellijst toe te voegen. Zodra je een recap bekijkt, verdwijnt hij automatisch hieruit.
+        </p>
+        <button id="goto-games-btn"
+                type="button"
+                data-dpad="watchlist"
+                class="btn-team-accent min-h-[44px] px-5 py-2.5 rounded-lg text-sm font-medium cursor-pointer">
+          Bekijk Wedstrijden
+        </button>
+      </div>
+    </div>
+
+  </main>
+
+  <!-- ========================================================================
+       PERSISTENTE PODCAST MINI-PLAYER
+       ======================================================================== -->
+  <aside id="podcast-mini-player"
+         class="hidden fixed bottom-0 left-0 right-0 z-40 border-t border-white/10 bg-[#181818]/95 backdrop-blur-md text-zinc-100 shadow-2xl"
+         aria-label="Podcast Audio Mini-Player">
+    <div class="tv-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-3">
+      <div class="flex flex-col md:flex-row md:items-center justify-between gap-3">
+
+        <div class="flex items-center gap-3 min-w-0 md:w-1/3">
+          <div class="w-10 h-10 rounded-lg flex items-center justify-center shrink-0 font-bold text-xs"
+               style="background-color: var(--team-accent-soft); color: var(--team-accent);">
+            X&amp;O
+          </div>
+          <div class="min-w-0">
+            <p id="mp-show-name" class="text-xs text-zinc-400 truncate">Podcast</p>
+            <p id="mp-episode-title" class="text-sm font-semibold text-white truncate">Geen aflevering gekozen</p>
+          </div>
+        </div>
+
+        <div class="flex flex-col gap-1.5 flex-1 max-w-xl">
+          <div class="flex items-center justify-center gap-2 sm:gap-3">
+            <button id="mp-back15-btn"
+                    type="button"
+                    data-dpad="miniplayer"
+                    aria-label="15 seconden terug"
+                    class="min-h-[38px] px-2.5 rounded-lg text-xs font-mono bg-white/10 hover:bg-white/15 cursor-pointer transition-colors">
+              -15s
+            </button>
+            <button id="mp-playpause-btn"
+                    type="button"
+                    data-dpad="miniplayer"
+                    aria-label="Afspelen of pauzeren"
+                    class="btn-team-accent min-h-[40px] min-w-[40px] px-4 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-1.5 cursor-pointer">
+              <span id="mp-playpause-icon" aria-hidden="true"></span>
+              <span id="mp-playpause-label">Speel</span>
+            </button>
+            <button id="mp-fwd30-btn"
+                    type="button"
+                    data-dpad="miniplayer"
+                    aria-label="30 seconden vooruit"
+                    class="min-h-[38px] px-2.5 rounded-lg text-xs font-mono bg-white/10 hover:bg-white/15 cursor-pointer transition-colors">
+              +30s
+            </button>
+          </div>
+
+          <div class="flex items-center gap-2.5 text-xs font-mono tabular-nums text-zinc-400">
+            <span id="mp-current-time">00:00</span>
+            <input id="mp-seek-slider"
+                   type="range"
+                   min="0"
+                   max="100"
+                   value="0"
+                   data-dpad="miniplayer"
+                   aria-label="Zoekbalk podcast"
+                   class="hub-range flex-1 h-1.5 rounded-lg bg-zinc-700" />
+            <span id="mp-duration-time">00:00</span>
+          </div>
+        </div>
+
+        <div class="flex items-center justify-between md:justify-end gap-2.5 shrink-0">
+          <div class="flex items-center gap-2">
+            <button id="mp-mute-btn"
+                    type="button"
+                    data-dpad="miniplayer"
+                    aria-label="Geluid dempen of aanzetten"
+                    class="min-h-[38px] min-w-[38px] rounded-lg bg-white/10 hover:bg-white/15 flex items-center justify-center cursor-pointer transition-colors">
+              <span id="mp-volume-icon" aria-hidden="true"></span>
+            </button>
+            <label for="mp-volume-slider" class="sr-only">Podcast volume</label>
+            <input id="mp-volume-slider"
+                   type="range"
+                   min="0"
+                   max="1"
+                   step="0.05"
+                   value="0.85"
+                   data-dpad="miniplayer"
+                   class="hub-range w-20 sm:w-24 h-1.5 rounded-lg bg-zinc-700" />
+          </div>
+
+          <button id="mp-close-btn"
+                  type="button"
+                  data-dpad="miniplayer"
+                  aria-label="Sluit podcast mini-player"
+                  class="min-h-[38px] min-w-[38px] rounded-lg bg-white/10 hover:bg-white/20 flex items-center justify-center cursor-pointer transition-colors">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+          </button>
+        </div>
+      </div>
+    </div>
+    <audio id="podcast-audio-el" preload="metadata"></audio>
+  </aside>
+
+  <!-- ========================================================================
+       MODAL 1: YOUTUBE THEATER & TV FULLSCREEN SPELER (VOOR RECAPS & PODCAST VIDEO)
+       ======================================================================== -->
+  <div id="theater-modal"
+       class="theater-modal-shell hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-2 sm:p-6"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="theater-title">
+    <div class="theater-dialog modal-surface w-full max-w-6xl rounded-2xl overflow-hidden flex flex-col max-h-[94vh] shadow-2xl">
+
+      <div class="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3.5 border-b border-white/10 shrink-0">
+        <div class="min-w-0 flex-1">
+          <div class="flex items-center gap-2 text-xs text-zinc-400">
+            <span id="theater-source-badge">1080p Theater Speler</span>
+            <span aria-hidden="true">·</span>
+            <span id="theater-mode-subtitle">Spoiler-vrije modus actief</span>
+          </div>
+          <h2 id="theater-title" class="text-base sm:text-lg font-bold text-white truncate">
+            Video Afspelen
+          </h2>
+        </div>
+
+        <div class="flex items-center gap-2 shrink-0">
+          <button id="theater-mute-btn"
+                  type="button"
+                  data-dpad="theater"
+                  class="min-h-[40px] px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 hover:bg-white/15 text-zinc-100 flex items-center gap-1.5 cursor-pointer transition-colors">
+            <span id="theater-mute-label">Geluid Aan</span>
+          </button>
+
+          <button id="theater-fullscreen-btn"
+                  type="button"
+                  data-dpad="theater"
+                  class="min-h-[40px] px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 hover:bg-white/15 text-zinc-100 hidden sm:flex items-center gap-1.5 cursor-pointer transition-colors">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"></path>
+            </svg>
+            <span id="theater-fs-label">TV Fullscreen</span>
+          </button>
+
+          <button id="theater-close-btn"
+                  type="button"
+                  data-dpad="theater"
+                  aria-label="Sluit videospeler"
+                  class="min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 cursor-pointer transition-colors">
+            <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+              <line x1="18" y1="6" x2="6" y2="18"></line>
+              <line x1="6" y1="6" x2="18" y2="18"></line>
+            </svg>
+            <span>Sluiten</span>
+          </button>
+        </div>
+      </div>
+
+      <div class="theater-video-wrap">
+        <div id="yt-player-mount"></div>
+        <div id="theater-fallback-overlay" class="hidden absolute inset-0 bg-[#121212] flex flex-col items-center justify-center p-6 text-center">
+          <p class="text-base sm:text-lg font-bold text-white mb-2">
+            Video kon niet in de pagina worden afgespeeld
+          </p>
+          <p class="text-xs sm:text-sm text-zinc-400 max-w-md mb-5">
+            De browser of rechthebbende blokkeert embedded weergave voor deze clip. Open de video direct op YouTube of rond handmatig af.
+          </p>
+          <div class="flex flex-wrap items-center justify-center gap-3">
+            <a id="theater-external-link"
+               href="#"
+               target="_blank"
+               rel="noopener noreferrer"
+               data-dpad="theater"
+               class="btn-team-accent min-h-[44px] px-5 py-2.5 rounded-xl text-sm font-semibold inline-flex items-center gap-2">
+              Open op YouTube
+            </a>
+            <button id="theater-fallback-finish-btn"
+                    type="button"
+                    data-dpad="theater"
+                    class="min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-medium bg-white/10 hover:bg-white/15 text-white cursor-pointer">
+              Video Afronden
+            </button>
+          </div>
+        </div>
+      </div>
+
+      <div class="flex flex-wrap items-center justify-between gap-3 px-4 sm:px-6 py-3 border-t border-white/10 text-xs text-zinc-400 shrink-0 bg-[#181818]">
+        <span id="theater-footer-hint">
+          Sluit automatisch bij einde video (<code class="font-mono text-zinc-300">onStateChange === 0</code>).
+        </span>
+        <button id="theater-sim-end-btn"
+                type="button"
+                data-dpad="theater"
+                class="min-h-[36px] px-3 py-1.5 rounded-lg text-xs font-medium bg-white/10 hover:bg-white/15 text-zinc-200 cursor-pointer transition-colors">
+          Afronden &amp; Sluiten
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 2: DONKERE BOXSCORE MODAL
+       ======================================================================== -->
+  <div id="boxscore-modal"
+       class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-3 sm:p-6"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="boxscore-title">
+    <div class="modal-surface w-full max-w-4xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl">
+
+      <div class="flex items-start justify-between gap-4 px-5 sm:px-6 py-4 border-b border-white/10 shrink-0">
+        <div class="min-w-0">
+          <p class="text-xs font-medium text-zinc-400 mb-0.5" id="boxscore-meta">Boxscore &amp; Statistieken</p>
+          <h2 id="boxscore-title" class="text-lg sm:text-xl font-bold text-white truncate">Wedstrijd Statistieken</h2>
+        </div>
+        <button id="boxscore-close-btn"
+                type="button"
+                data-dpad="boxscore"
+                aria-label="Sluit boxscore"
+                class="min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          <span>Sluiten</span>
+        </button>
+      </div>
+
+      <div id="boxscore-spoiler-guard" class="hidden p-8 sm:p-10 text-center flex flex-col items-center justify-center gap-4">
+        <div class="w-12 h-12 rounded-2xl bg-white/10 flex items-center justify-center text-zinc-300" aria-hidden="true">
+          <svg class="w-6 h-6" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+            <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+            <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+            <line x1="2" y1="2" x2="22" y2="22"></line>
+          </svg>
+        </div>
+        <div>
+          <h3 class="text-lg font-bold text-white mb-1">Spoiler-bescherming actief</h3>
+          <p class="text-sm text-zinc-400 max-w-md">
+            De score van deze wedstrijd is nog verborgen. Het openen van de boxscore onthult direct de eindstand en topscorers.
+          </p>
+        </div>
+        <div class="flex flex-wrap items-center justify-center gap-3 mt-1">
+          <button id="boxscore-reveal-confirm-btn"
+                  type="button"
+                  data-dpad="boxscore"
+                  class="btn-team-accent min-h-[44px] px-5 py-2.5 rounded-xl text-sm font-semibold cursor-pointer">
+            Onthul Score &amp; Toon Boxscore
+          </button>
+          <button id="boxscore-guard-cancel-btn"
+                  type="button"
+                  data-dpad="boxscore"
+                  class="min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-medium bg-white/10 hover:bg-white/15 text-zinc-200 cursor-pointer">
+            Blijf Spoiler-Vrij
+          </button>
+        </div>
+      </div>
+
+      <div id="boxscore-content" class="overflow-y-auto p-5 sm:p-6 space-y-6">
+        <div class="rounded-xl bg-[#161616] border border-white/10 p-4 sm:p-5">
+          <div class="grid grid-cols-1 md:grid-cols-3 items-center gap-4">
+            <div class="flex items-center justify-between md:justify-start gap-4">
+              <div id="bs-away-crest"></div>
+              <div>
+                <p id="bs-away-name" class="text-base sm:text-lg font-bold text-white"></p>
+                <p id="bs-away-record" class="text-xs text-zinc-400 tabular-nums"></p>
+              </div>
+              <span id="bs-away-score" class="font-mono text-3xl font-bold tabular-nums text-white md:ml-auto"></span>
+            </div>
+
+            <div class="text-center text-xs font-medium text-zinc-400 border-y md:border-y-0 md:border-x border-white/10 py-2 md:py-0" id="bs-status-center">
+              Final
+            </div>
+
+            <div class="flex items-center justify-between md:justify-end gap-4">
+              <span id="bs-home-score" class="font-mono text-3xl font-bold tabular-nums text-white md:order-1 md:mr-auto"></span>
+              <div class="md:text-right md:order-2">
+                <p id="bs-home-name" class="text-base sm:text-lg font-bold text-white"></p>
+                <p id="bs-home-record" class="text-xs text-zinc-400 tabular-nums"></p>
+              </div>
+              <div id="bs-home-crest" class="md:order-3"></div>
+            </div>
+          </div>
+
+          <div class="mt-4 pt-4 border-t border-white/10 overflow-x-auto">
+            <table class="w-full text-xs sm:text-sm font-mono tabular-nums text-left">
+              <thead>
+                <tr class="text-zinc-500 border-b border-white/10" id="bs-quarters-head"></tr>
+              </thead>
+              <tbody id="bs-quarters-body"></tbody>
+            </table>
+          </div>
+        </div>
+
+        <div class="flex items-center gap-2" role="tablist" aria-label="Kies team boxscore">
+          <button id="bs-tab-away" type="button" role="tab" data-dpad="boxscore" aria-selected="true"
+                  class="min-h-[42px] px-4 py-2 rounded-lg text-sm font-semibold border cursor-pointer transition-colors"></button>
+          <button id="bs-tab-home" type="button" role="tab" data-dpad="boxscore" aria-selected="false"
+                  class="min-h-[42px] px-4 py-2 rounded-lg text-sm font-semibold border cursor-pointer transition-colors"></button>
+        </div>
+
+        <div class="rounded-xl bg-[#161616] border border-white/10 overflow-hidden">
+          <div class="overflow-x-auto">
+            <table class="w-full text-xs sm:text-sm tabular-nums text-left">
+              <thead>
+                <tr class="text-zinc-400 border-b border-white/10 bg-white/[0.02]">
+                  <th class="py-3 px-4 font-semibold">Speler</th>
+                  <th class="py-3 px-3 font-semibold text-right">MIN</th>
+                  <th class="py-3 px-3 font-semibold text-right text-white">PTS</th>
+                  <th class="py-3 px-3 font-semibold text-right">REB</th>
+                  <th class="py-3 px-3 font-semibold text-right">AST</th>
+                  <th class="py-3 px-3 font-semibold text-right">STL</th>
+                  <th class="py-3 px-4 font-semibold text-right">BLK</th>
+                </tr>
+              </thead>
+              <tbody id="bs-players-body" class="divide-y divide-white/[0.06]"></tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 3: INSTELLINGEN, PODCAST FILTERS, KANALEN & JSON BACKUP (FASE 3 + 4)
+       ======================================================================== -->
+  <div id="settings-modal"
+       class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-3 sm:p-6"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="settings-title">
+    <div class="modal-surface w-full max-w-3xl rounded-2xl overflow-hidden flex flex-col max-h-[90vh] shadow-2xl">
+
+      <div class="flex items-start justify-between gap-4 px-5 sm:px-6 py-4 border-b border-white/10 shrink-0">
+        <div>
+          <p class="text-xs font-medium text-zinc-400 mb-0.5">Voorkeuren, Podcast-Filters, PWA &amp; Backup</p>
+          <h2 id="settings-title" class="text-lg sm:text-xl font-bold text-white">Instellingen &amp; Beheerpaneel</h2>
+        </div>
+        <button id="settings-close-btn"
+                type="button"
+                data-dpad="settings"
+                aria-label="Sluit instellingen"
+                class="min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium bg-white/10 hover:bg-white/20 text-white flex items-center gap-1.5 shrink-0 cursor-pointer transition-colors">
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+            <line x1="18" y1="6" x2="6" y2="18"></line>
+            <line x1="6" y1="6" x2="18" y2="18"></line>
+          </svg>
+          <span>Sluiten</span>
+        </button>
+      </div>
+
+      <div class="overflow-y-auto p-5 sm:p-6 space-y-6">
+
+        <!-- Algemene Voorkeuren -->
+        <section class="rounded-xl bg-[#161616] border border-white/10 p-4 sm:p-5 space-y-4">
+          <h3 class="text-sm font-bold text-white">Algemeen &amp; Verversing</h3>
+          <div class="grid grid-cols-1 sm:grid-cols-2 gap-4">
+            <div>
+              <label for="setting-default-view" class="block text-xs font-medium text-zinc-400 mb-1.5">
+                Standaard opstartscherm
+              </label>
+              <select id="setting-default-view"
+                      data-dpad="settings"
+                      class="w-full min-h-[42px] px-3 py-2 rounded-lg text-sm bg-[#262626] border border-white/10 text-white">
+                <option value="games">Wedstrijden &amp; Recaps</option>
+                <option value="podcasts">Podcasts (X &amp; O's)</option>
+                <option value="watchlist">Watch Later Wachtrij</option>
+              </select>
+            </div>
+            <div>
+              <label for="setting-refresh-interval" class="block text-xs font-medium text-zinc-400 mb-1.5">
+                RSS Verversingsfrequentie
+              </label>
+              <select id="setting-refresh-interval"
+                      data-dpad="settings"
+                      class="w-full min-h-[42px] px-3 py-2 rounded-lg text-sm bg-[#262626] border border-white/10 text-white">
+                <option value="15">Elke 15 minuten</option>
+                <option value="30">Elke 30 minuten</option>
+                <option value="60">Elk uur (60 minuten)</option>
+              </select>
+            </div>
+          </div>
+        </section>
+
+        <!-- Custom YouTube Kanalen voor Wedstrijden -->
+        <section class="rounded-xl bg-[#161616] border border-white/10 p-4 sm:p-5 space-y-4">
+          <div>
+            <h3 class="text-sm font-bold text-white">Extra YouTube-kanalen (Wedstrijd Recaps)</h3>
+            <p class="text-xs text-zinc-400 mt-0.5">
+              Voeg een YouTube Channel ID (bijv. <code class="font-mono text-zinc-300">UCWJ2lWNubArHWmf3FIHbfcQ</code>) of kanaal-URL toe.
+            </p>
+          </div>
+
+          <form id="add-youtube-form" class="grid grid-cols-1 sm:grid-cols-12 gap-2.5">
+            <input id="yt-channel-name-input"
+                   type="text"
+                   required
+                   placeholder="Naam (bijv. Chaz NBA)"
+                   data-dpad="settings"
+                   class="sm:col-span-4 min-h-[42px] px-3 py-2 rounded-lg text-sm bg-[#262626] border border-white/10 text-white placeholder-zinc-500" />
+            <input id="yt-channel-id-input"
+                   type="text"
+                   required
+                   placeholder="Channel ID of URL (UC...)"
+                   data-dpad="settings"
+                   class="sm:col-span-6 min-h-[42px] px-3 py-2 rounded-lg text-sm bg-[#262626] border border-white/10 text-white placeholder-zinc-500" />
+            <button type="submit"
+                    data-dpad="settings"
+                    class="sm:col-span-2 btn-team-accent min-h-[42px] px-3 py-2 rounded-lg text-sm font-semibold cursor-pointer">
+              Toevoegen
+            </button>
+          </form>
+
+          <ul id="custom-youtube-list" class="space-y-2 text-sm"></ul>
+        </section>
+
+        <!-- Podcast Feeds met Trefwoord-filter & YouTube RSS (DEEL A) -->
+        <section class="rounded-xl bg-[#161616] border border-white/10 p-4 sm:p-5 space-y-4">
+          <div>
+            <h3 class="text-sm font-bold text-white">Podcast RSS-feeds (Audio + YouTube + Trefwoord-filter)</h3>
+            <p class="text-xs text-zinc-400 mt-0.5">
+              Gebruik <strong class="text-zinc-200">Filter op trefwoord in titel</strong> (bijv. <code class="font-mono text-zinc-300">X &amp; O</code>) om uit gecombineerde netwerkfeeds zoals Friends of Sports uitsluitend jouw NBA-afleveringen te tonen.
+            </p>
+          </div>
+
+          <form id="add-podcast-form" class="grid grid-cols-1 sm:grid-cols-2 gap-2.5">
+            <input id="pod-name-input"
+                   type="text"
+                   required
+                   placeholder="Podcast naam (bijv. The Lowe Post)"
+                   data-dpad="settings"
+                   class="min-h-[42px] px-3 py-2 rounded-lg text-sm bg-[#262626] border border-white/10 text-white placeholder-zinc-500" />
+            <input id="pod-filter-input"
+                   type="text"
+                   placeholder="Filter op trefwoord in titel (optioneel, bijv. X &amp; O)"
+                   data-dpad="settings"
+                   class="min-h-[42px] px-3 py-2 rounded-lg text-sm bg-[#262626] border border-white/10 text-white placeholder-zinc-500" />
+            <input id="pod-url-input"
+                   type="url"
+                   placeholder="Audio / Spotify RSS URL (https://...)"
+                   data-dpad="settings"
+                   class="min-h-[42px] px-3 py-2 rounded-lg text-sm bg-[#262626] border border-white/10 text-white placeholder-zinc-500" />
+            <input id="pod-yt-url-input"
+                   type="text"
+                   placeholder="YouTube RSS / Kanaal-ID / Playlist (optioneel)"
+                   data-dpad="settings"
+                   class="min-h-[42px] px-3 py-2 rounded-lg text-sm bg-[#262626] border border-white/10 text-white placeholder-zinc-500" />
+            <button type="submit"
+                    data-dpad="settings"
+                    class="sm:col-span-2 btn-team-accent min-h-[42px] px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer">
+              Podcast Toevoegen
+            </button>
+          </form>
+
+          <ul id="custom-podcast-list" class="space-y-2.5 text-sm"></ul>
+        </section>
+
+        <!-- Backup & Herstel (FASE 4) -->
+        <section class="rounded-xl bg-[#161616] border border-white/10 p-4 sm:p-5 space-y-4">
+          <div>
+            <h3 class="text-sm font-bold text-white">Backup &amp; Herstel (JSON)</h3>
+            <p class="text-xs text-zinc-400 mt-0.5">
+              Exporteer al je voorkeuren, team-branding, spoiler-status, bekeken wedstrijden, YouTube/Podcast-feeds en Watch Later wachtrij naar een <code class="font-mono text-zinc-300">.json</code> bestand voor een ander apparaat.
+            </p>
+          </div>
+          <div class="flex flex-wrap items-center gap-3">
+            <button id="backup-export-btn"
+                    type="button"
+                    data-dpad="settings"
+                    class="btn-team-accent min-h-[42px] px-4 py-2 rounded-lg text-sm font-semibold flex items-center gap-2 cursor-pointer">
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="7 10 12 15 17 10"></polyline>
+                <line x1="12" y1="15" x2="12" y2="3"></line>
+              </svg>
+              <span>Exporteer Backup (.json)</span>
+            </button>
+
+            <button id="backup-import-trigger"
+                    type="button"
+                    data-dpad="settings"
+                    class="min-h-[42px] px-4 py-2 rounded-lg text-sm font-medium bg-[#262626] hover:bg-white/10 border border-white/10 text-white flex items-center gap-2 cursor-pointer transition-colors">
+              <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"></path>
+                <polyline points="17 8 12 3 7 8"></polyline>
+                <line x1="12" y1="3" x2="12" y2="15"></line>
+              </svg>
+              <span>Herstel Backup (.json)</span>
+            </button>
+            <input id="backup-import-input" type="file" accept=".json,application/json" class="hidden" />
+          </div>
+        </section>
+
+        <!-- PWA Installatie Sectie -->
+        <section id="settings-pwa-section" class="rounded-xl bg-[#161616] border border-white/10 p-4 sm:p-5 space-y-3">
+          <div class="flex flex-wrap items-center justify-between gap-3">
+            <div>
+              <h3 class="text-sm font-bold text-white">App Installeren (PWA &amp; Offline)</h3>
+              <p id="settings-pwa-status" class="text-xs text-zinc-400 mt-0.5">
+                Offline Service Worker wordt gecontroleerd...
+              </p>
+            </div>
+            <button id="settings-pwa-install-btn"
+                    type="button"
+                    data-dpad="settings"
+                    class="hidden btn-team-accent min-h-[40px] px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold cursor-pointer">
+              Installeer op Apparaat
+            </button>
+          </div>
+          <p id="ios-install-guide" class="hidden text-xs text-zinc-300 bg-[#262626] border border-white/10 rounded-lg p-3">
+            Op iPhone/iPad (Safari): tik onderaan op <strong>Deel</strong> en kies <strong>Zet op beginscherm</strong> voor een fullscreen app zonder adresbalk.
+          </p>
+        </section>
+
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       MODAL 4: VERBORGEN DEBUG CONSOLE (5x KLIKKEN OP VERSIENUMMER IN FOOTER)
+       ======================================================================== -->
+  <div id="debug-modal"
+       class="hidden fixed inset-0 z-50 modal-backdrop flex items-center justify-center p-3 sm:p-6"
+       role="dialog"
+       aria-modal="true"
+       aria-labelledby="debug-title">
+    <div class="modal-surface w-full max-w-3xl rounded-2xl overflow-hidden flex flex-col max-h-[88vh] shadow-2xl">
+      <div class="flex items-start justify-between gap-4 px-5 sm:px-6 py-4 border-b border-white/10 shrink-0">
+        <div>
+          <p class="text-xs font-mono text-zinc-400 mb-0.5">Diagnostiek · Service Worker · RSS Status</p>
+          <h2 id="debug-title" class="text-lg font-bold text-white">CourtSide Hub Debug Console</h2>
+        </div>
+        <button id="debug-close-btn"
+                type="button"
+                data-dpad="debug"
+                aria-label="Sluit debug console"
+                class="min-h-[40px] px-3.5 py-1.5 rounded-lg text-xs sm:text-sm font-medium bg-white/10 hover:bg-white/20 text-white cursor-pointer">
+          Sluiten
+        </button>
+      </div>
+
+      <div class="overflow-y-auto p-5 sm:p-6 space-y-4">
+        <div class="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs">
+          <div class="rounded-xl bg-[#161616] border border-white/10 p-3">
+            <p class="text-zinc-500">Service Worker</p>
+            <p id="dbg-sw-status" class="font-mono font-bold text-white mt-1">-</p>
+          </div>
+          <div class="rounded-xl bg-[#161616] border border-white/10 p-3">
+            <p class="text-zinc-500">Netwerk</p>
+            <p id="dbg-net-status" class="font-mono font-bold text-white mt-1">-</p>
+          </div>
+          <div class="rounded-xl bg-[#161616] border border-white/10 p-3">
+            <p class="text-zinc-500">localStorage</p>
+            <p id="dbg-storage-size" class="font-mono font-bold text-white mt-1">-</p>
+          </div>
+          <div class="rounded-xl bg-[#161616] border border-white/10 p-3">
+            <p class="text-zinc-500">Weergave</p>
+            <p id="dbg-display-mode" class="font-mono font-bold text-white mt-1">-</p>
+          </div>
+        </div>
+
+        <div>
+          <p class="text-xs font-semibold text-zinc-400 mb-2">Recente API / RSS Status &amp; Systeemlog</p>
+          <pre id="debug-log-output"
+               class="rounded-xl bg-[#121212] border border-white/10 p-4 text-xs font-mono text-zinc-300 overflow-x-auto max-h-64 whitespace-pre-wrap leading-relaxed"></pre>
+        </div>
+
+        <div class="flex flex-wrap items-center justify-between gap-3 pt-1">
+          <button id="debug-copy-btn"
+                  type="button"
+                  data-dpad="debug"
+                  class="btn-team-accent min-h-[42px] px-4 py-2 rounded-lg text-sm font-semibold cursor-pointer">
+            Kopieer debug log voor Gemini
+          </button>
+          <button id="debug-clear-sw-btn"
+                  type="button"
+                  data-dpad="debug"
+                  class="min-h-[42px] px-4 py-2 rounded-lg text-xs font-medium bg-white/10 hover:bg-white/15 text-zinc-200 cursor-pointer">
+            Vernieuw Service Worker Cache
+          </button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <!-- ========================================================================
+       FEEDBACK TOAST CONTAINER
+       ======================================================================== -->
+  <div id="toast-container"
+       class="fixed bottom-4 right-4 left-4 sm:left-auto sm:max-w-md z-50 pointer-events-none flex flex-col gap-2"
+       aria-live="polite"></div>
+
+  <!-- ========================================================================
+       RUSTIGE FOOTER (5x KLIKKEN OP VERSIENUMMER OPENT DEBUG CONSOLE)
+       ======================================================================== -->
+  <footer class="tv-container max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 mt-6 border-t border-[var(--border-subtle)]">
+    <div class="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-3 text-xs" style="color: var(--text-muted);">
+      <div class="flex flex-wrap items-center gap-2">
+        <span class="font-medium" style="color: var(--text-secondary);">CourtSide Hub</span>
+        <span aria-hidden="true">·</span>
+        <span>D-Pad &amp; Toetsenbord: Pijltjestoetsen + Enter + Esc</span>
+        <span aria-hidden="true">·</span>
+        <span>PWA &amp; Lokale Opslag</span>
+      </div>
+      <div class="flex items-center gap-3">
+        <button id="reset-demo-btn"
+                type="button"
+                data-dpad="footer"
+                class="hover:underline cursor-pointer py-1">
+          Reset spoiler-status
+        </button>
+        <span aria-hidden="true">·</span>
+        <button id="version-trigger"
+                type="button"
+                data-dpad="footer"
+                class="font-mono py-1 cursor-pointer select-none"
+                title="Klik 5x snel voor Debug Console">
+          v1.3.0-fase4
+        </button>
+      </div>
+    </div>
+  </footer>
+
+  <!-- ========================================================================
+       YOUTUBE IFRAME API + MODULAIRE APPLICATIE LOGICA (FASE 1 - FASE 4)
+       ======================================================================== -->
+  <script src="https://www.youtube.com/iframe_api"></script>
+  <script>
+    'use strict';
+
+    /* === NBA TEAMS & BRANDING DATABASE === */
+    const NBA_TEAMS = [
+      { id: 'ATL', name: 'Atlanta Hawks', aliases: ['hawks', 'atlanta'], conf: 'Eastern Conference', accent: '#E03A3E', secondary: '#C1D32F' },
+      { id: 'BOS', name: 'Boston Celtics', aliases: ['celtics', 'boston'], conf: 'Eastern Conference', accent: '#008348', secondary: '#BB9753' },
+      { id: 'BKN', name: 'Brooklyn Nets', aliases: ['nets', 'brooklyn'], conf: 'Eastern Conference', accent: '#9CA3AF', secondary: '#FFFFFF' },
+      { id: 'CHA', name: 'Charlotte Hornets', aliases: ['hornets', 'charlotte'], conf: 'Eastern Conference', accent: '#00788C', secondary: '#1D1160' },
+      { id: 'CHI', name: 'Chicago Bulls', aliases: ['bulls', 'chicago'], conf: 'Eastern Conference', accent: '#CE1141', secondary: '#FFFFFF' },
+      { id: 'CLE', name: 'Cleveland Cavaliers', aliases: ['cavaliers', 'cavs', 'cleveland'], conf: 'Eastern Conference', accent: '#860038', secondary: '#FDBB30' },
+      { id: 'DET', name: 'Detroit Pistons', aliases: ['pistons', 'detroit'], conf: 'Eastern Conference', accent: '#C8102E', secondary: '#1D42BA' },
+      { id: 'IND', name: 'Indiana Pacers', aliases: ['pacers', 'indiana'], conf: 'Eastern Conference', accent: '#FDBB30', secondary: '#002D62' },
+      { id: 'MIA', name: 'Miami Heat', aliases: ['heat', 'miami'], conf: 'Eastern Conference', accent: '#98002E', secondary: '#F9A01B' },
+      { id: 'MIL', name: 'Milwaukee Bucks', aliases: ['bucks', 'milwaukee'], conf: 'Eastern Conference', accent: '#00471B', secondary: '#EEE1C6' },
+      { id: 'NYK', name: 'New York Knicks', aliases: ['knicks', 'new york'], conf: 'Eastern Conference', accent: '#F58426', secondary: '#006BB6' },
+      { id: 'ORL', name: 'Orlando Magic', aliases: ['magic', 'orlando'], conf: 'Eastern Conference', accent: '#0077C0', secondary: '#C4CED4' },
+      { id: 'PHI', name: 'Philadelphia 76ers', aliases: ['76ers', 'sixers', 'philadelphia'], conf: 'Eastern Conference', accent: '#006BB6', secondary: '#ED174C' },
+      { id: 'TOR', name: 'Toronto Raptors', aliases: ['raptors', 'toronto'], conf: 'Eastern Conference', accent: '#CE1141', secondary: '#A1A1AA' },
+      { id: 'WAS', name: 'Washington Wizards', aliases: ['wizards', 'washington'], conf: 'Eastern Conference', accent: '#E31837', secondary: '#002B5C' },
+      { id: 'DAL', name: 'Dallas Mavericks', aliases: ['mavericks', 'mavs', 'dallas'], conf: 'Western Conference', accent: '#00538C', secondary: '#B8C4CA' },
+      { id: 'DEN', name: 'Denver Nuggets', aliases: ['nuggets', 'denver'], conf: 'Western Conference', accent: '#FEC524', secondary: '#0E2240' },
+      { id: 'GSW', name: 'Golden State Warriors', aliases: ['warriors', 'golden state'], conf: 'Western Conference', accent: '#1D428A', secondary: '#FFC72C' },
+      { id: 'HOU', name: 'Houston Rockets', aliases: ['rockets', 'houston'], conf: 'Western Conference', accent: '#CE1141', secondary: '#C4CED4' },
+      { id: 'LAC', name: 'LA Clippers', aliases: ['clippers', 'la clippers'], conf: 'Western Conference', accent: '#C8102E', secondary: '#1D428A' },
+      { id: 'LAL', name: 'Los Angeles Lakers', aliases: ['lakers', 'la lakers'], conf: 'Western Conference', accent: '#FDB927', secondary: '#552583' },
+      { id: 'MEM', name: 'Memphis Grizzlies', aliases: ['grizzlies', 'memphis'], conf: 'Western Conference', accent: '#5D76A9', secondary: '#12173F' },
+      { id: 'MIN', name: 'Minnesota Timberwolves', aliases: ['timberwolves', 'wolves', 'minnesota'], conf: 'Western Conference', accent: '#78BE20', secondary: '#236192' },
+      { id: 'NOP', name: 'New Orleans Pelicans', aliases: ['pelicans', 'new orleans'], conf: 'Western Conference', accent: '#C8102E', secondary: '#85714D' },
+      { id: 'OKC', name: 'Oklahoma City Thunder', aliases: ['thunder', 'oklahoma city', 'okc'], conf: 'Western Conference', accent: '#007AC1', secondary: '#EF3B24' },
+      { id: 'PHX', name: 'Phoenix Suns', aliases: ['suns', 'phoenix'], conf: 'Western Conference', accent: '#E56020', secondary: '#1D1160' },
+      { id: 'POR', name: 'Portland Trail Blazers', aliases: ['trail blazers', 'blazers', 'portland'], conf: 'Western Conference', accent: '#E03A3E', secondary: '#A1A1AA' },
+      { id: 'SAC', name: 'Sacramento Kings', aliases: ['kings', 'sacramento'], conf: 'Western Conference', accent: '#724C9F', secondary: '#A1A1AA' },
+      { id: 'SAS', name: 'San Antonio Spurs', aliases: ['spurs', 'san antonio'], conf: 'Western Conference', accent: '#C4CED4', secondary: '#71717A' },
+      { id: 'UTA', name: 'Utah Jazz', aliases: ['jazz', 'utah'], conf: 'Western Conference', accent: '#00471B', secondary: '#F9A01B' },
+    ];
+
+    /* === STANDAARD YOUTUBE & PODCAST RSS KANALEN === */
+    const DEFAULT_YOUTUBE_CHANNELS = {
+      nba: {
+        id: 'nba',
+        label: 'NBA Official YouTube',
+        channelId: 'UCWJ2lWNubArHWmf3FIHbfcQ',
+        rssUrl: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCWJ2lWNubArHWmf3FIHbfcQ'
+      },
+      hoh: {
+        id: 'hoh',
+        label: 'House of Highlights',
+        channelId: 'UCqQo7ewe87aYAe7ub536zJA',
+        rssUrl: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCqQo7ewe87aYAe7ub536zJA'
+      }
+    };
+
+    const DEFAULT_PODCAST_FEEDS = [
+      {
+        id: 'xo-dennis-xhaet',
+        name: "X & O's · Dennis Xhaët",
+        audioRssUrl: 'https://rss.art19.com/friends-of-sports',
+        youtubeRssUrl: 'https://www.youtube.com/feeds/videos.xml?channel_id=UCeTQoOZeEipF-q5352W_iTQ',
+        titleFilter: 'X & O',
+        isDefault: true
+      }
+    ];
+
+    /* === FALLBACK WEDSTRIJDEN MET ECHTE NBA YOUTUBE VIDEO-ID'S === */
+    const FALLBACK_NBA_GAMES = [
+      {
+        id: 'nba-real-bos-den',
+        sourceLabel: 'NBA Official (Fallback)',
+        rawTitle: 'CELTICS at NUGGETS | FULL GAME HIGHLIGHTS | OT Thriller',
+        away: { id: 'BOS', name: 'Boston Celtics', record: '11-3', score: 124 },
+        home: { id: 'DEN', name: 'Denver Nuggets', record: '10-4', score: 121 },
+        status: 'Final · OT',
+        arena: 'Ball Arena, Denver',
+        tipoff: 'Afgelopen nacht',
+        durationRecap: '9:42 Full Highlights',
+        teaser: 'Zenuwslopende clash met verlenging tussen Boston en Denver.',
+        youtubeVideoId: 'HX-mNTYf4x8',
+        topPerformersSpoiler: 'J. Tatum: 38 PTS, 9 REB · N. Jokić: 34 PTS, 14 REB, 11 AST',
+        boxscore: {
+          quarters: { labels: ['Q1', 'Q2', 'Q3', 'Q4', 'OT', 'T'], away: [29, 27, 30, 26, 12, 124], home: [31, 25, 28, 28, 9, 121] },
+          awayPlayers: [
+            { name: 'Jayson Tatum', pos: 'F', min: 42, pts: 38, reb: 9, ast: 6, stl: 2, blk: 1 },
+            { name: 'Jaylen Brown', pos: 'G-F', min: 39, pts: 27, reb: 5, ast: 4, stl: 1, blk: 0 },
+            { name: 'Derrick White', pos: 'G', min: 37, pts: 19, reb: 4, ast: 7, stl: 2, blk: 2 },
+            { name: 'Kristaps Porziņģis', pos: 'C', min: 33, pts: 21, reb: 8, ast: 2, stl: 0, blk: 3 },
+            { name: 'Jrue Holiday', pos: 'G', min: 35, pts: 11, reb: 6, ast: 6, stl: 3, blk: 1 }
+          ],
+          homePlayers: [
+            { name: 'Nikola Jokić', pos: 'C', min: 41, pts: 34, reb: 14, ast: 11, stl: 2, blk: 1 },
+            { name: 'Jamal Murray', pos: 'G', min: 38, pts: 29, reb: 4, ast: 7, stl: 1, blk: 0 },
+            { name: 'Aaron Gordon', pos: 'F', min: 35, pts: 22, reb: 7, ast: 3, stl: 1, blk: 2 },
+            { name: 'Michael Porter Jr.', pos: 'F', min: 32, pts: 18, reb: 6, ast: 1, stl: 0, blk: 1 },
+            { name: 'Christian Braun', pos: 'G', min: 31, pts: 12, reb: 5, ast: 2, stl: 2, blk: 0 }
+          ]
+        }
+      },
+      {
+        id: 'nba-real-uta-lal',
+        sourceLabel: 'NBA Official (Fallback)',
+        rawTitle: 'JAZZ at LAKERS | 50 PTS Showtime | FULL GAME HIGHLIGHTS',
+        away: { id: 'UTA', name: 'Utah Jazz', record: '4-10', score: 118 },
+        home: { id: 'LAL', name: 'Los Angeles Lakers', record: '10-4', score: 126 },
+        status: 'Final',
+        arena: 'Crypto.com Arena, Los Angeles',
+        tipoff: 'Afgelopen nacht',
+        durationRecap: '10:05 Full Highlights',
+        teaser: 'Aanvallend spektakel in Los Angeles met een historische scoringsavond.',
+        youtubeVideoId: 'VydiM2VuElM',
+        topPerformersSpoiler: 'A. Davis: 50 PTS, 12 REB · L. James: 26 PTS, 12 AST',
+        boxscore: {
+          quarters: { labels: ['Q1', 'Q2', 'Q3', 'Q4', 'T'], away: [30, 28, 31, 29, 118], home: [34, 31, 29, 32, 126] },
+          awayPlayers: [
+            { name: 'Lauri Markkanen', pos: 'F', min: 37, pts: 31, reb: 8, ast: 3, stl: 1, blk: 1 },
+            { name: 'Keyonte George', pos: 'G', min: 35, pts: 24, reb: 4, ast: 8, stl: 1, blk: 0 },
+            { name: 'John Collins', pos: 'F-C', min: 32, pts: 20, reb: 9, ast: 2, stl: 0, blk: 2 },
+            { name: 'Collin Sexton', pos: 'G', min: 29, pts: 19, reb: 3, ast: 5, stl: 2, blk: 0 },
+            { name: 'Walker Kessler', pos: 'C', min: 28, pts: 12, reb: 13, ast: 1, stl: 0, blk: 4 }
+          ],
+          homePlayers: [
+            { name: 'Anthony Davis', pos: 'C-F', min: 39, pts: 50, reb: 12, ast: 3, stl: 2, blk: 4 },
+            { name: 'LeBron James', pos: 'F', min: 36, pts: 26, reb: 8, ast: 12, stl: 1, blk: 1 },
+            { name: 'Austin Reaves', pos: 'G', min: 34, pts: 21, reb: 4, ast: 6, stl: 1, blk: 0 },
+            { name: 'Rui Hachimura', pos: 'F', min: 30, pts: 15, reb: 6, ast: 1, stl: 0, blk: 1 },
+            { name: 'Dalton Knecht', pos: 'G-F', min: 27, pts: 14, reb: 3, ast: 2, stl: 1, blk: 0 }
+          ]
+        }
+      },
+      {
+        id: 'nba-real-phi-orl',
+        sourceLabel: 'NBA Official (Fallback)',
+        rawTitle: 'EXTENDED: 76ERS at MAGIC | Buzzer Beater & Comeback | FULL GAME HIGHLIGHTS',
+        away: { id: 'PHI', name: 'Philadelphia 76ers', record: '6-8', score: 112 },
+        home: { id: 'ORL', name: 'Orlando Magic', record: '9-6', score: 114 },
+        status: 'Final',
+        arena: 'Kia Center, Orlando',
+        tipoff: 'Afgelopen nacht',
+        durationRecap: '11:12 Extended Highlights',
+        teaser: 'Eastern Conference strijd beslist in de allerlaatste seconden na een late comeback.',
+        youtubeVideoId: '2IFgffaqgAQ',
+        topPerformersSpoiler: 'P. Banchero: 33 PTS, 9 REB · T. Maxey: 32 PTS, 7 AST',
+        boxscore: {
+          quarters: { labels: ['Q1', 'Q2', 'Q3', 'Q4', 'T'], away: [31, 29, 27, 25, 112], home: [25, 28, 29, 32, 114] },
+          awayPlayers: [
+            { name: 'Tyrese Maxey', pos: 'G', min: 39, pts: 32, reb: 4, ast: 7, stl: 2, blk: 0 },
+            { name: 'Joel Embiid', pos: 'C', min: 34, pts: 28, reb: 11, ast: 4, stl: 0, blk: 3 },
+            { name: 'Paul George', pos: 'F', min: 35, pts: 21, reb: 6, ast: 4, stl: 2, blk: 1 },
+            { name: 'Caleb Martin', pos: 'F', min: 30, pts: 13, reb: 5, ast: 2, stl: 1, blk: 0 },
+            { name: 'Kelly Oubre Jr.', pos: 'G-F', min: 28, pts: 11, reb: 4, ast: 1, stl: 2, blk: 1 }
+          ],
+          homePlayers: [
+            { name: 'Paolo Banchero', pos: 'F', min: 38, pts: 33, reb: 9, ast: 6, stl: 1, blk: 1 },
+            { name: 'Franz Wagner', pos: 'F', min: 36, pts: 27, reb: 6, ast: 5, stl: 2, blk: 1 },
+            { name: 'Jalen Suggs', pos: 'G', min: 33, pts: 18, reb: 4, ast: 4, stl: 3, blk: 1 },
+            { name: 'Wendell Carter Jr.', pos: 'C', min: 29, pts: 14, reb: 10, ast: 2, stl: 0, blk: 2 },
+            { name: 'Kentavious Caldwell-Pope', pos: 'G', min: 30, pts: 12, reb: 3, ast: 2, stl: 2, blk: 0 }
+          ]
+        }
+      },
+      {
+        id: 'nba-real-phx-sac',
+        sourceLabel: 'NBA Official (Fallback)',
+        rawTitle: 'SUNS at KINGS | FULL GAME HIGHLIGHTS',
+        away: { id: 'PHX', name: 'Phoenix Suns', record: '9-5', score: 115 },
+        home: { id: 'SAC', name: 'Sacramento Kings', record: '8-6', score: 108 },
+        status: 'Final',
+        arena: 'Golden 1 Center, Sacramento',
+        tipoff: 'Afgelopen nacht',
+        durationRecap: '9:14 Full Highlights',
+        teaser: 'Pacific Division duel tussen Phoenix en Sacramento vol hoogstaand schutterswerk.',
+        youtubeVideoId: 'vI7mK5Xx9D8',
+        topPerformersSpoiler: 'D. Booker: 35 PTS, 6 AST · D. Fox: 31 PTS, 8 AST',
+        boxscore: {
+          quarters: { labels: ['Q1', 'Q2', 'Q3', 'Q4', 'T'], away: [29, 30, 28, 28, 115], home: [27, 26, 29, 26, 108] },
+          awayPlayers: [
+            { name: 'Devin Booker', pos: 'G', min: 38, pts: 35, reb: 4, ast: 6, stl: 1, blk: 0 },
+            { name: 'Kevin Durant', pos: 'F', min: 37, pts: 29, reb: 7, ast: 4, stl: 1, blk: 2 },
+            { name: 'Bradley Beal', pos: 'G', min: 33, pts: 19, reb: 3, ast: 5, stl: 2, blk: 0 },
+            { name: 'Jusuf Nurkić', pos: 'C', min: 28, pts: 12, reb: 13, ast: 4, stl: 0, blk: 1 },
+            { name: 'Tyus Jones', pos: 'G', min: 27, pts: 10, reb: 2, ast: 8, stl: 1, blk: 0 }
+          ],
+          homePlayers: [
+            { name: "De'Aaron Fox", pos: 'G', min: 38, pts: 31, reb: 5, ast: 8, stl: 3, blk: 0 },
+            { name: 'Domantas Sabonis', pos: 'C', min: 37, pts: 23, reb: 15, ast: 7, stl: 1, blk: 1 },
+            { name: 'DeMar DeRozan', pos: 'F', min: 36, pts: 22, reb: 4, ast: 4, stl: 1, blk: 0 },
+            { name: 'Keegan Murray', pos: 'F', min: 33, pts: 14, reb: 6, ast: 1, stl: 1, blk: 2 },
+            { name: 'Malik Monk', pos: 'G', min: 25, pts: 12, reb: 2, ast: 4, stl: 1, blk: 0 }
+          ]
+        }
+      }
+    ];
+
+    /* === FALLBACK PODCAST AFLEVERINGEN (MET AUDIO EN YOUTUBE VIDEO-ID) === */
+    const FALLBACK_PODCAST_EPISODES = [
+      {
+        id: 'xo-fallback-1',
+        showName: "X & O's · Dennis Xhaët",
+        title: "X&O'S - Met Flagg en wimpel (Met The Chaotic Three)",
+        description: 'Diepgaande Belgische NBA-analyse met Dennis Xhaët over de nieuwste rookies, tactische trends en opvallende seizoensstarts in het Oosten en Westen.',
+        pubDateFormatted: 'Recent',
+        duration: '56 min',
+        audioUrl: 'https://rss.art19.com/episodes/3438306c-1c4c-4e54-b681-05e7380979fc.mp3',
+        youtubeVideoId: 'LHZgj8zerjQ'
+      }
+    ];
+
+    /* === STATE & LOCALSTORAGE PERSISTENCE === */
+    const STORAGE_KEY = 'courtside_hub_state_v1';
+
+    const DEFAULT_STATE = {
+      theme: 'dark',
+      favoriteTeam: '',
+      globalSpoilersHidden: true,
+      revealedGameIds: [],
+      watchedGameIds: [],
+      watchLaterIds: [],
+      activeFilter: 'all',
+      activeView: 'games',
+      defaultView: 'games',
+      refreshIntervalMin: 30,
+      feedSource: 'nba',
+      tvMode: false,
+      customYoutubeChannels: [],
+      podcastFeeds: structuredClone(DEFAULT_PODCAST_FEEDS),
+      podcastVolume: 0.85,
+      version: '1.3.0-fase4'
+    };
+
+    let appState = loadState();
+    let activeGames = [];
+    let podcastEpisodes = [...FALLBACK_PODCAST_EPISODES];
+    let debugLogs = [];
+    let swStatusText = 'Niet ondersteund';
+    let deferredInstallPrompt = null;
+    let ytPlayer = null;
+    let ytApiReady = false;
+    let theaterMuteCheckTimer = null;
+    let theaterModeType = 'game'; // 'game' | 'podcast'
+    let isTheaterMuted = false;
+    let currentTheaterGameId = null;
+    let currentTheaterFullscreen = false;
+    let currentBoxscoreGameId = null;
+    let currentBoxscoreTeamSide = 'away';
+    let currentPodcastEpisode = null;
+    let autoRefreshTimer = null;
+    let draggedWatchId = null;
+    let versionClickCount = 0;
+    let versionClickTimer = null;
+
+    function addDebugLog(scope, message, ok = true) {
+      const time = new Date().toLocaleTimeString('nl-NL');
+      debugLogs.unshift(`[${time}] [${ok ? 'OK' : 'WARN'}] [${scope}] ${message}`);
+      if (debugLogs.length > 40) debugLogs.length = 40;
+    }
+
+    function loadState() {
+      try {
+        const raw = localStorage.getItem(STORAGE_KEY);
+        if (!raw) return structuredClone(DEFAULT_STATE);
+        const parsed = JSON.parse(raw);
+
+        // Migreer eventueel oude customPodcastFeeds uit Fase 3
+        let feeds = Array.isArray(parsed.podcastFeeds) && parsed.podcastFeeds.length > 0
+          ? parsed.podcastFeeds
+          : structuredClone(DEFAULT_PODCAST_FEEDS);
+
+        if (Array.isArray(parsed.customPodcastFeeds) && parsed.customPodcastFeeds.length > 0 && !parsed.podcastFeeds) {
+          parsed.customPodcastFeeds.forEach(oldPod => {
+            feeds.push({
+              id: oldPod.id || `pod-${Date.now()}`,
+              name: oldPod.name,
+              audioRssUrl: oldPod.rssUrl || '',
+              youtubeRssUrl: '',
+              titleFilter: '',
+              isDefault: false
+            });
+          });
+        }
+
+        return {
+          ...structuredClone(DEFAULT_STATE),
+          ...parsed,
+          revealedGameIds: Array.isArray(parsed.revealedGameIds) ? parsed.revealedGameIds : [],
+          watchedGameIds: Array.isArray(parsed.watchedGameIds) ? parsed.watchedGameIds : [],
+          watchLaterIds: Array.isArray(parsed.watchLaterIds) ? parsed.watchLaterIds : [],
+          customYoutubeChannels: Array.isArray(parsed.customYoutubeChannels) ? parsed.customYoutubeChannels : [],
+          podcastFeeds: feeds
+        };
+      } catch (err) {
+        console.warn('Kon opgeslagen status niet laden:', err);
+        return structuredClone(DEFAULT_STATE);
+      }
+    }
+
+    function saveState() {
+      try {
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(appState));
+      } catch (err) {
+        addDebugLog('Storage', `Opslaan mislukt: ${err.message}`, false);
+      }
+    }
+
+    /* === TREFWOORD-FILTER & YOUTUBE URL NORMALISATIE (DEEL A) === */
+    function normalizeFilterToken(str) {
+      return (str || '')
+        .toLowerCase()
+        .replace(/['’`\s\-_.,!?]+/g, '')
+        .replace(/&/g, '&');
+    }
+
+    function matchesTitleKeyword(title, filterExpression) {
+      if (!filterExpression || !filterExpression.trim()) return true;
+      const titleLower = (title || '').toLowerCase();
+      const titleCompact = normalizeFilterToken(title);
+
+      const keywords = filterExpression.split(',').map(k => k.trim()).filter(Boolean);
+      if (keywords.length === 0) return true;
+
+      return keywords.some(kw => {
+        const kwLower = kw.toLowerCase();
+        const kwCompact = normalizeFilterToken(kw);
+        return titleLower.includes(kwLower) || (kwCompact.length > 0 && titleCompact.includes(kwCompact));
+      });
+    }
+
+    function normalizeYoutubeRssUrl(inputVal) {
+      const val = (inputVal || '').trim();
+      if (!val) return '';
+      if (val.includes('youtube.com/feeds/videos.xml')) return val;
+
+      const plMatch = val.match(/[?&]list=([A-Za-z0-9_-]+)/) || val.match(/^(PL[A-Za-z0-9_-]{10,})$/);
+      if (plMatch) {
+        return `https://www.youtube.com/feeds/videos.xml?playlist_id=${encodeURIComponent(plMatch[1])}`;
+      }
+
+      const ucMatch = val.match(/(UC[A-Za-z0-9_-]{20,})/);
+      if (ucMatch) {
+        return `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(ucMatch[1])}`;
+      }
+
+      return val;
+    }
+
+    /* === INSTANT CLASSIC ALGORITME === */
+    function detectInstantClassics(title, extraText = '') {
+      const haystack = `${title || ''} ${extraText || ''}`.toLowerCase();
+      const badges = [];
+
+      if (/\b(ot|2ot|3ot|overtime|verlenging)\b/i.test(haystack)) {
+        badges.push({ label: '🔥 OT Thriller', variant: 'ot' });
+      }
+      if (/\b(5[0-9]|6[0-9]|7[0-9])\s*(pts|points|pt|punten)\b/i.test(haystack) || /50pt/i.test(haystack)) {
+        badges.push({ label: '⭐ 50pt Game', variant: 'fifty' });
+      }
+      if (/(buzzer[\s-]?beater|game[\s-]?winner|walk[\s-]?off|clutch finish|wild ending)/i.test(haystack)) {
+        badges.push({ label: '⚡ Buzzer Beater', variant: 'buzzer' });
+      }
+      if (/(comeback|rally|20-point)/i.test(haystack)) {
+        badges.push({ label: '🚀 Comeback', variant: 'comeback' });
+      } else if (/\bupset\b/i.test(haystack)) {
+        badges.push({ label: '💥 Big Upset', variant: 'ot' });
+      }
+      return badges;
+    }
+
+    /* === UNIVERSELE RSS PROXY HELPER === */
+    async function fetchRssViaProxy(rssUrl, timeoutMs = 4800) {
+      const start = performance.now();
+      const controller = new AbortController();
+      const timer = setTimeout(() => controller.abort(), timeoutMs);
+
+      try {
+        const proxyUrl = `https://api.rss2json.com/v1/api.json?rss_url=${encodeURIComponent(rssUrl)}`;
+        const res = await fetch(proxyUrl, { signal: controller.signal });
+        if (res.ok) {
+          const json = await res.json();
+          if (json.status === 'ok' && Array.isArray(json.items)) {
+            clearTimeout(timer);
+            const ms = Math.round(performance.now() - start);
+            addDebugLog('RSS', `rss2json (${ms}ms): ${json.items.length} items van ${rssUrl}`, true);
+            return { feedTitle: json.feed?.title || '', items: json.items };
+          }
+        }
+      } catch (_) {}
+
+      try {
+        const xmlProxyUrl = `https://api.allorigins.win/raw?url=${encodeURIComponent(rssUrl)}`;
+        const res2 = await fetch(xmlProxyUrl, { signal: controller.signal });
+        clearTimeout(timer);
+        if (!res2.ok) throw new Error(`HTTP ${res2.status}`);
+        const xmlText = await res2.text();
+        const doc = new DOMParser().parseFromString(xmlText, 'text/xml');
+
+        const atomEntries = Array.from(doc.querySelectorAll('entry'));
+        if (atomEntries.length > 0) {
+          const feedTitle = doc.querySelector('feed > title')?.textContent || 'YouTube RSS';
+          const items = atomEntries.map(entry => ({
+            title: entry.querySelector('title')?.textContent || '',
+            link: entry.querySelector('link')?.getAttribute('href') || '',
+            guid: entry.querySelector('id')?.textContent || '',
+            pubDate: entry.querySelector('published')?.textContent || '',
+            description: entry.querySelector('media\\:description, description')?.textContent || ''
+          }));
+          const ms = Math.round(performance.now() - start);
+          addDebugLog('RSS', `allorigins Atom (${ms}ms): ${items.length} items van ${rssUrl}`, true);
+          return { feedTitle, items };
+        }
+
+        const rssItems = Array.from(doc.querySelectorAll('channel > item'));
+        const feedTitle = doc.querySelector('channel > title')?.textContent || 'Podcast RSS';
+        const items = rssItems.map(item => {
+          const enc = item.querySelector('enclosure');
+          return {
+            title: item.querySelector('title')?.textContent || '',
+            link: item.querySelector('link')?.textContent || '',
+            guid: item.querySelector('guid')?.textContent || '',
+            pubDate: item.querySelector('pubDate')?.textContent || '',
+            description: item.querySelector('description')?.textContent || '',
+            enclosure: enc ? { link: enc.getAttribute('url'), duration: item.querySelector('itunes\\:duration')?.textContent || '' } : null
+          };
+        });
+        const ms = Math.round(performance.now() - start);
+        addDebugLog('RSS', `allorigins RSS2 (${ms}ms): ${items.length} items van ${rssUrl}`, true);
+        return { feedTitle, items };
+      } catch (err) {
+        clearTimeout(timer);
+        addDebugLog('RSS', `Mislukt voor ${rssUrl}: ${err.message || err}`, false);
+        throw err;
+      }
+    }
+
+    /* === YOUTUBE RSS WEDSTRIJD-INGEST === */
+    function extractYouTubeId(url) {
+      if (!url) return null;
+      const match = url.match(/(?:v=|\/embed\/|youtu\.be\/|yt:video:)([A-Za-z0-9_-]{11})/);
+      return match ? match[1] : null;
+    }
+
+    function matchTeamsFromTitle(title) {
+      const lower = (title || '').toLowerCase();
+      const hits = [];
+
+      NBA_TEAMS.forEach(team => {
+        let bestPos = Infinity;
+        const candidates = [team.name.toLowerCase(), ...team.aliases];
+        candidates.forEach(alias => {
+          const idx = lower.indexOf(alias);
+          if (idx !== -1 && idx < bestPos) bestPos = idx;
+        });
+        if (bestPos !== Infinity) hits.push({ team, pos: bestPos });
+      });
+
+      hits.sort((a, b) => a.pos - b.pos);
+      if (hits.length >= 2) return { away: hits[0].team, home: hits[1].team };
+      return null;
+    }
+
+    function buildSyntheticBoxscore(awayTeam, homeTeam, seedIdx) {
+      const qAway = [26 + (seedIdx % 5), 28 + ((seedIdx * 3) % 7), 29, 30 - (seedIdx % 4)];
+      const qHome = [27, 25 + (seedIdx % 6), 28 + ((seedIdx * 2) % 5), 27 + (seedIdx % 4)];
+      const totalAway = qAway.reduce((a, b) => a + b, 0);
+      const totalHome = qHome.reduce((a, b) => a + b, 0);
+
+      const makeRoster = (team, total) => [
+        { name: `${team.id} Topscorer`, pos: 'G-F', min: 37, pts: Math.round(total * 0.29), reb: 7, ast: 8, stl: 2, blk: 1 },
+        { name: `${team.id} Forward`, pos: 'F', min: 35, pts: Math.round(total * 0.22), reb: 9, ast: 3, stl: 1, blk: 1 },
+        { name: `${team.id} Guard`, pos: 'G', min: 33, pts: Math.round(total * 0.17), reb: 4, ast: 7, stl: 2, blk: 0 },
+        { name: `${team.id} Center`, pos: 'C', min: 30, pts: Math.round(total * 0.14), reb: 11, ast: 2, stl: 0, blk: 3 },
+        { name: `${team.id} Wing`, pos: 'F', min: 28, pts: Math.round(total * 0.11), reb: 5, ast: 2, stl: 1, blk: 1 }
+      ];
+
+      return {
+        awayScore: totalAway,
+        homeScore: totalHome,
+        boxscore: {
+          quarters: { labels: ['Q1', 'Q2', 'Q3', 'Q4', 'T'], away: [...qAway, totalAway], home: [...qHome, totalHome] },
+          awayPlayers: makeRoster(awayTeam, totalAway),
+          homePlayers: makeRoster(homeTeam, totalHome)
+        }
+      };
+    }
+
+    function parseRssItemToGame(item, idx, sourceLabel) {
+      const title = item.title || '';
+      const isHighlight = /(highlight|recap|full game|ending|vs\.?|at\s)/i.test(title);
+      if (!isHighlight) return null;
+
+      const matched = matchTeamsFromTitle(title);
+      if (!matched) return null;
+
+      const videoId = extractYouTubeId(item.link || item.guid);
+      if (!videoId) return null;
+
+      const pubDate = item.pubDate ? new Date(item.pubDate) : new Date();
+      const timeFormatted = Number.isNaN(pubDate.getTime())
+        ? 'Recent'
+        : pubDate.toLocaleDateString('nl-NL', { day: '2-digit', month: 'short' });
+
+      const synthetic = buildSyntheticBoxscore(matched.away, matched.home, idx + 1);
+      const topAway = synthetic.boxscore.awayPlayers[0];
+      const topHome = synthetic.boxscore.homePlayers[0];
+
+      return {
+        id: `rss-${videoId}`,
+        sourceLabel: sourceLabel,
+        rawTitle: title,
+        away: { id: matched.away.id, name: matched.away.name, record: 'NBA', score: synthetic.awayScore },
+        home: { id: matched.home.id, name: matched.home.name, record: 'NBA', score: synthetic.homeScore },
+        status: 'Final · YouTube Recap',
+        arena: sourceLabel,
+        tipoff: timeFormatted,
+        durationRecap: 'Full Recap Video',
+        teaser: title.replace(/\|/g, '·'),
+        youtubeVideoId: videoId,
+        topPerformersSpoiler: `${topAway.name}: ${topAway.pts} PTS · ${topHome.name}: ${topHome.pts} PTS`,
+        boxscore: synthetic.boxscore,
+        isLiveRss: true
+      };
+    }
+
+    function getAllYoutubeChannelsMap() {
+      const map = { ...DEFAULT_YOUTUBE_CHANNELS };
+      (appState.customYoutubeChannels || []).forEach(ch => {
+        map[ch.id] = {
+          id: ch.id,
+          label: ch.name,
+          channelId: ch.channelId,
+          rssUrl: `https://www.youtube.com/feeds/videos.xml?channel_id=${encodeURIComponent(ch.channelId)}`
+        };
+      });
+      return map;
+    }
+
+    function populateFeedSourceSelector() {
+      const select = document.getElementById('feed-source-selector');
+      const channels = getAllYoutubeChannelsMap();
+      select.innerHTML = '';
+
+      Object.values(channels).forEach(ch => {
+        const opt = document.createElement('option');
+        opt.value = ch.id;
+        opt.textContent = `YouTube RSS: ${ch.label}`;
+        select.appendChild(opt);
+      });
+
+      const demoOpt = document.createElement('option');
+      demoOpt.value = 'demo';
+      demoOpt.textContent = 'Offline NBA Recaps (4 Classics)';
+      select.appendChild(demoOpt);
+
+      if (!channels[appState.feedSource] && appState.feedSource !== 'demo') {
+        appState.feedSource = 'nba';
+      }
+      select.value = appState.feedSource || 'nba';
+    }
+
+    function enrichGameWithBadges(game) {
+      return {
+        ...game,
+        instantClassics: detectInstantClassics(game.rawTitle, game.teaser)
+      };
+    }
+
+    async function loadGamesFeed(showFeedback = false) {
+      const source = appState.feedSource || 'nba';
+      const statusEl = document.getElementById('feed-status-text');
+      const refreshIcon = document.getElementById('refresh-spinner-icon');
+
+      refreshIcon.classList.add('animate-spin');
+
+      if (source === 'demo') {
+        activeGames = FALLBACK_NBA_GAMES.map(enrichGameWithBadges);
+        statusEl.textContent = 'Offline NBA Recaps · 4 Echte YouTube Highlights';
+        refreshIcon.classList.remove('animate-spin');
+        renderGames();
+        renderWatchlist();
+        if (showFeedback) showToast('Offline NBA recaps geladen.');
+        return;
+      }
+
+      const channels = getAllYoutubeChannelsMap();
+      const channel = channels[source] || DEFAULT_YOUTUBE_CHANNELS.nba;
+
+      try {
+        const data = await fetchRssViaProxy(channel.rssUrl, 4800);
+        const parsedGames = [];
+        const seenIds = new Set();
+
+        data.items.forEach((item, idx) => {
+          const game = parseRssItemToGame(item, idx, channel.label);
+          if (game && !seenIds.has(game.id)) {
+            seenIds.add(game.id);
+            parsedGames.push(game);
+          }
+        });
+
+        refreshIcon.classList.remove('animate-spin');
+
+        if (parsedGames.length > 0) {
+          activeGames = parsedGames.slice(0, 8).map(enrichGameWithBadges);
+          statusEl.textContent = `Live YouTube RSS · ${channel.label} (${activeGames.length} recaps)`;
+          if (showFeedback) showToast(`${activeGames.length} actuele recaps geladen via ${channel.label}.`);
+        } else {
+          activeGames = FALLBACK_NBA_GAMES.map(enrichGameWithBadges);
+          statusEl.textContent = `${channel.label} · Fallback naar actuele NBA recaps`;
+          if (showFeedback) showToast('Geen recente volledige recaps in feed — fallback recaps actief.');
+        }
+      } catch (err) {
+        refreshIcon.classList.remove('animate-spin');
+        activeGames = FALLBACK_NBA_GAMES.map(enrichGameWithBadges);
+        statusEl.textContent = 'Fallback Actief · 4 Echte NBA Recaps';
+        if (showFeedback) showToast('Externe RSS tijdelijk onbereikbaar — fallback NBA recaps geladen.');
+      }
+
+      renderGames();
+      renderWatchlist();
+    }
+
+    /* === PODCAST HUB (TREFWOORD-FILTER + AUDIO & YOUTUBE MERGE) === */
+    function stripHtml(html) {
+      const div = document.createElement('div');
+      div.innerHTML = html || '';
+      return (div.textContent || div.innerText || '').trim();
+    }
+
+    function formatTimeSec(sec) {
+      if (!Number.isFinite(sec) || sec < 0) return '00:00';
+      const total = Math.floor(sec);
+      const mins = Math.floor(total / 60);
+      const secs = total % 60;
+      return `${String(mins).padStart(2, '0')}:${String(secs).padStart(2, '0')}`;
+    }
+
+    function normalizeEpisodeMatchKey(title) {
+      return (title || '')
+        .toLowerCase()
+        .replace(/['’`\s\-_.,!?|()[\]:]+/g, '')
+        .slice(0, 28);
+    }
+
+    async function loadPodcastsFeed(showFeedback = false) {
+      const spinner = document.getElementById('podcast-spinner-icon');
+      const statusEl = document.getElementById('podcast-status-text');
+      spinner.classList.add('animate-spin');
+
+      const feeds = appState.podcastFeeds && appState.podcastFeeds.length > 0
+        ? appState.podcastFeeds
+        : DEFAULT_PODCAST_FEEDS;
+
+      const collected = [];
+
+      await Promise.all(feeds.map(async (feed) => {
+        const audioItems = [];
+        const youtubeItems = [];
+
+        // 1. Audio / Spotify RSS ophalen & filteren op trefwoord
+        if (feed.audioRssUrl) {
+          try {
+            const audioData = await fetchRssViaProxy(feed.audioRssUrl, 5000);
+            (audioData.items || []).forEach(item => {
+              const audioUrl = item.enclosure?.link || item.enclosure?.url || '';
+              if (!audioUrl) return;
+              if (!matchesTitleKeyword(item.title, feed.titleFilter)) return;
+              audioItems.push(item);
+            });
+          } catch (err) {
+            addDebugLog('Podcast Audio', `Fout bij ${feed.name}: ${err.message || err}`, false);
+          }
+        }
+
+        // 2. YouTube RSS ophalen & filteren op hetzelfde trefwoord
+        if (feed.youtubeRssUrl) {
+          const normalizedYtUrl = normalizeYoutubeRssUrl(feed.youtubeRssUrl);
+          try {
+            const ytData = await fetchRssViaProxy(normalizedYtUrl, 5000);
+            (ytData.items || []).forEach(item => {
+              if (!matchesTitleKeyword(item.title, feed.titleFilter)) return;
+              const videoId = extractYouTubeId(item.link || item.guid);
+              if (!videoId) return;
+              youtubeItems.push({ ...item, videoId });
+            });
+          } catch (err) {
+            addDebugLog('Podcast YouTube', `Fout bij ${feed.name}: ${err.message || err}`, false);
+          }
+        }
+
+        // 3. Merge Audio en YouTube video's per aflevering
+        const usedYtIds = new Set();
+
+        audioItems.slice(0, 10).forEach((item, idx) => {
+          const audioKey = normalizeEpisodeMatchKey(item.title);
+          const matchedYt = youtubeItems.find(yt => {
+            const ytKey = normalizeEpisodeMatchKey(yt.title);
+            return ytKey === audioKey || ytKey.includes(audioKey.slice(0, 14)) || audioKey.includes(ytKey.slice(0, 14));
+          });
+          if (matchedYt) usedYtIds.add(matchedYt.videoId);
+
+          const pub = item.pubDate ? new Date(item.pubDate) : null;
+          const dateStr = pub && !Number.isNaN(pub.getTime())
+            ? pub.toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: 'numeric' })
+            : 'Recent';
+
+          collected.push({
+            id: `pod-${feed.id}-a-${idx}`,
+            showName: feed.name,
+            title: item.title || 'Aflevering',
+            titleFilterUsed: feed.titleFilter || '',
+            description: stripHtml(item.description).slice(0, 175) + (item.description ? '...' : ''),
+            pubDateFormatted: dateStr,
+            duration: item.enclosure?.duration || 'Audio',
+            audioUrl: item.enclosure?.link || item.enclosure?.url || '',
+            youtubeVideoId: matchedYt ? matchedYt.videoId : ''
+          });
+        });
+
+        // Voeg eventuele video-only afleveringen toe die nog niet gekoppeld waren
+        youtubeItems.slice(0, 10).forEach((yt, idx) => {
+          if (usedYtIds.has(yt.videoId)) return;
+          const pub = yt.pubDate ? new Date(yt.pubDate) : null;
+          const dateStr = pub && !Number.isNaN(pub.getTime())
+            ? pub.toLocaleDateString('nl-NL', { day: '2-digit', month: 'short', year: 'numeric' })
+            : 'Recent';
+
+          collected.push({
+            id: `pod-${feed.id}-v-${idx}`,
+            showName: feed.name,
+            title: yt.title || 'Video Aflevering',
+            titleFilterUsed: feed.titleFilter || '',
+            description: stripHtml(yt.description || 'YouTube podcast aflevering.').slice(0, 175),
+            pubDateFormatted: dateStr,
+            duration: 'YouTube Video',
+            audioUrl: '',
+            youtubeVideoId: yt.videoId
+          });
+        });
+      }));
+
+      spinner.classList.remove('animate-spin');
+
+      if (collected.length > 0) {
+        podcastEpisodes = collected;
+        statusEl.textContent = `Live Podcast Feeds · ${podcastEpisodes.length} gefilterde afleveringen`;
+        if (showFeedback) showToast(`${podcastEpisodes.length} gefilterde afleveringen geladen.`);
+      } else {
+        podcastEpisodes = [...FALLBACK_PODCAST_EPISODES];
+        statusEl.textContent = "Fallback Actief · X & O's (Dennis Xhaët)";
+        if (showFeedback) showToast("RSS tijdelijk traag — fallback van X & O's geladen.");
+      }
+
+      renderPodcasts();
+    }
+
+    function renderPodcasts() {
+      const grid = document.getElementById('podcasts-grid');
+      const emptyEl = document.getElementById('podcasts-empty');
+
+      document.getElementById('nav-podcast-count').textContent = podcastEpisodes.length;
+
+      if (podcastEpisodes.length === 0) {
+        grid.innerHTML = '';
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      emptyEl.classList.add('hidden');
+
+      grid.innerHTML = podcastEpisodes.map(ep => {
+        const isPlayingAudio = currentPodcastEpisode && currentPodcastEpisode.id === ep.id;
+        const hasAudio = Boolean(ep.audioUrl);
+        const hasVideo = Boolean(ep.youtubeVideoId);
+
+        return `
+          <article class="hub-card rounded-2xl p-5 sm:p-6 flex flex-col justify-between gap-4 ${isPlayingAudio ? 'is-favorite-matchup' : ''}">
+            <div>
+              <div class="flex flex-wrap items-center gap-2 text-xs mb-2" style="color: var(--text-muted);">
+                <span class="font-semibold" style="color: var(--team-accent);">${ep.showName}</span>
+                ${ep.titleFilterUsed ? `<span aria-hidden="true">·</span><span>Filter: "${ep.titleFilterUsed}"</span>` : ''}
+                <span aria-hidden="true">·</span>
+                <span>${ep.pubDateFormatted}</span>
+              </div>
+              <h2 class="text-base sm:text-lg font-bold mb-2 leading-snug" style="color: var(--text-primary);">
+                ${ep.title}
+              </h2>
+              <p class="text-xs sm:text-sm leading-relaxed" style="color: var(--text-secondary);">
+                ${ep.description}
+              </p>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2.5 pt-1">
+              <button type="button"
+                      data-dpad="podcast"
+                      data-pod-action="play-audio"
+                      data-ep-id="${ep.id}"
+                      ${!hasAudio ? 'disabled' : ''}
+                      class="btn-team-accent flex-1 min-w-[165px] min-h-[44px] px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer disabled:opacity-40 disabled:cursor-not-allowed">
+                <span>🎧</span>
+                <span>${isPlayingAudio ? 'Nu aan het luisteren' : (hasAudio ? 'Luister (Audio / Spotify)' : 'Geen Audio-link')}</span>
+              </button>
+
+              <button type="button"
+                      data-dpad="podcast"
+                      data-pod-action="play-video"
+                      data-ep-id="${ep.id}"
+                      ${!hasVideo ? 'disabled' : ''}
+                      class="flex-1 min-w-[165px] min-h-[44px] px-4 py-2.5 rounded-xl text-xs sm:text-sm font-semibold border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer transition-colors disabled:opacity-40 disabled:cursor-not-allowed"
+                      style="color: var(--text-primary);">
+                <span>📺</span>
+                <span>${hasVideo ? 'Bekijk Video (YouTube)' : 'Geen YouTube-feed'}</span>
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    function playPodcastEpisode(episodeId) {
+      const ep = podcastEpisodes.find(e => e.id === episodeId);
+      if (!ep || !ep.audioUrl) return;
+
+      currentPodcastEpisode = ep;
+      const audio = document.getElementById('podcast-audio-el');
+      const miniPlayer = document.getElementById('podcast-mini-player');
+
+      document.getElementById('mp-show-name').textContent = ep.showName;
+      document.getElementById('mp-episode-title').textContent = ep.title;
+
+      audio.src = ep.audioUrl;
+      audio.volume = typeof appState.podcastVolume === 'number' ? appState.podcastVolume : 0.85;
+      document.getElementById('mp-volume-slider').value = audio.volume;
+      updateVolumeIcon(audio.volume, audio.muted);
+
+      miniPlayer.classList.remove('hidden');
+      document.body.classList.add('miniplayer-active');
+
+      audio.play().then(() => {
+        updateMiniPlayerPlayState(true);
+      }).catch(() => {
+        updateMiniPlayerPlayState(false);
+        showToast('Klik op Speel in de mini-player om audio te starten.');
+      });
+
+      renderPodcasts();
+    }
+
+    function openPodcastVideoInTheater(episodeId) {
+      const ep = podcastEpisodes.find(e => e.id === episodeId);
+      if (!ep || !ep.youtubeVideoId) return;
+
+      theaterModeType = 'podcast';
+      currentTheaterGameId = null;
+      isTheaterMuted = false;
+      updateTheaterMuteButton();
+
+      const modal = document.getElementById('theater-modal');
+      document.getElementById('theater-title').textContent = ep.title;
+      document.getElementById('theater-source-badge').textContent = `${ep.showName} · YouTube Video`;
+      document.getElementById('theater-mode-subtitle').textContent = 'Podcast Theater Modus';
+      document.getElementById('theater-footer-hint').textContent = 'Sluit automatisch zodra de YouTube-aflevering is afgelopen.';
+      document.getElementById('theater-external-link').href = `https://www.youtube.com/watch?v=${ep.youtubeVideoId}`;
+      document.getElementById('theater-fallback-overlay').classList.add('hidden');
+
+      currentTheaterFullscreen = appState.tvMode || window.innerWidth >= 1920;
+      modal.classList.toggle('is-tv-fullscreen', currentTheaterFullscreen);
+      document.getElementById('theater-fs-label').textContent = currentTheaterFullscreen ? 'Standaard Formaat' : 'TV Fullscreen';
+
+      modal.classList.remove('hidden');
+      document.body.classList.add('modal-open');
+
+      mountYouTubePlayer(ep.youtubeVideoId);
+
+      setTimeout(() => {
+        const closeBtn = document.getElementById('theater-close-btn');
+        if (closeBtn) closeBtn.focus();
+      }, 60);
+    }
+
+    function updateMiniPlayerPlayState(isPlaying) {
+      const iconEl = document.getElementById('mp-playpause-icon');
+      const labelEl = document.getElementById('mp-playpause-label');
+      if (isPlaying) {
+        labelEl.textContent = 'Pauze';
+        iconEl.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><rect x="6" y="4" width="4" height="16"></rect><rect x="14" y="4" width="4" height="16"></rect></svg>`;
+      } else {
+        labelEl.textContent = 'Speel';
+        iconEl.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="currentColor"><polygon points="6 3 20 12 6 21 6 3"></polygon></svg>`;
+      }
+    }
+
+    function updateVolumeIcon(volume, muted) {
+      const iconEl = document.getElementById('mp-volume-icon');
+      if (muted || volume === 0) {
+        iconEl.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><line x1="23" y1="9" x2="17" y2="15"></line><line x1="17" y1="9" x2="23" y2="15"></line></svg>`;
+      } else {
+        iconEl.innerHTML = `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><polygon points="11 5 6 9 2 9 2 15 6 15 11 19 11 5"></polygon><path d="M15.54 8.46a5 5 0 0 1 0 7.07"></path><path d="M19.07 4.93a10 10 0 0 1 0 14.14"></path></svg>`;
+      }
+    }
+
+    function closeMiniPlayer() {
+      const audio = document.getElementById('podcast-audio-el');
+      audio.pause();
+      audio.removeAttribute('src');
+      currentPodcastEpisode = null;
+      document.getElementById('podcast-mini-player').classList.add('hidden');
+      document.body.classList.remove('miniplayer-active');
+      renderPodcasts();
+    }
+
+    /* === DRAG-AND-DROP WATCH LATER WACHTRIJ === */
+    function renderWatchlist() {
+      const container = document.getElementById('watchlist-container');
+      const emptyEl = document.getElementById('watchlist-empty');
+
+      const queuedGames = appState.watchLaterIds
+        .map(id => getGameById(id))
+        .filter(Boolean);
+
+      document.getElementById('nav-watchlist-count').textContent = queuedGames.length;
+
+      if (queuedGames.length === 0) {
+        container.innerHTML = '';
+        emptyEl.classList.remove('hidden');
+        return;
+      }
+
+      emptyEl.classList.add('hidden');
+
+      container.innerHTML = queuedGames.map((game, idx) => {
+        const scoreVisible = isGameScoreVisible(game.id);
+        return `
+          <div class="watchlist-item hub-card rounded-2xl p-4 sm:p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4"
+               draggable="true"
+               data-watch-id="${game.id}">
+            <div class="flex items-center gap-3.5 min-w-0">
+              <div class="cursor-grab text-zinc-500 hover:text-zinc-300 shrink-0 px-1" title="Sleep om volgorde te wijzigen" aria-hidden="true">
+                <svg class="w-5 h-5" viewBox="0 0 24 24" fill="currentColor">
+                  <circle cx="9" cy="6" r="1.5"></circle><circle cx="15" cy="6" r="1.5"></circle>
+                  <circle cx="9" cy="12" r="1.5"></circle><circle cx="15" cy="12" r="1.5"></circle>
+                  <circle cx="9" cy="18" r="1.5"></circle><circle cx="15" cy="18" r="1.5"></circle>
+                </svg>
+              </div>
+
+              <span class="font-mono text-sm font-bold w-7 h-7 rounded-lg flex items-center justify-center shrink-0 tabular-nums"
+                    style="background-color: var(--team-accent-soft); color: var(--team-accent);">
+                ${idx + 1}
+              </span>
+
+              <div class="min-w-0">
+                <p class="text-base font-bold truncate" style="color: var(--text-primary);">
+                  ${game.away.name} @ ${game.home.name}
+                </p>
+                <p class="text-xs truncate" style="color: var(--text-muted);">
+                  ${scoreVisible ? `${game.away.id} ${game.away.score} - ${game.home.score} ${game.home.id}` : 'Score verborgen (spoiler-vrij)'} · ${game.durationRecap}
+                </p>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 shrink-0">
+              <button type="button"
+                      data-dpad="watchlist"
+                      data-watch-action="move-up"
+                      data-game-id="${game.id}"
+                      ${idx === 0 ? 'disabled' : ''}
+                      aria-label="Verplaats omhoog"
+                      class="min-h-[40px] min-w-[40px] px-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] disabled:opacity-35 cursor-pointer flex items-center justify-center">
+                ▲
+              </button>
+              <button type="button"
+                      data-dpad="watchlist"
+                      data-watch-action="move-down"
+                      data-game-id="${game.id}"
+                      ${idx === queuedGames.length - 1 ? 'disabled' : ''}
+                      aria-label="Verplaats omlaag"
+                      class="min-h-[40px] min-w-[40px] px-2.5 rounded-lg border border-[var(--border-subtle)] bg-[var(--bg-elevated)] disabled:opacity-35 cursor-pointer flex items-center justify-center">
+                ▼
+              </button>
+              <button type="button"
+                      data-dpad="watchlist"
+                      data-watch-action="play"
+                      data-game-id="${game.id}"
+                      class="btn-team-accent min-h-[40px] px-4 py-2 rounded-lg text-xs sm:text-sm font-semibold cursor-pointer">
+                Afspelen
+              </button>
+              <button type="button"
+                      data-dpad="watchlist"
+                      data-watch-action="remove"
+                      data-game-id="${game.id}"
+                      aria-label="Verwijder uit wachtrij"
+                      class="min-h-[40px] px-3 py-2 rounded-lg text-xs font-medium border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-red-500/15 hover:text-red-400 cursor-pointer transition-colors">
+                Verwijder
+              </button>
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function moveWatchlistItem(gameId, delta) {
+      const idx = appState.watchLaterIds.indexOf(gameId);
+      if (idx === -1) return;
+      const targetIdx = idx + delta;
+      if (targetIdx < 0 || targetIdx >= appState.watchLaterIds.length) return;
+      const copy = [...appState.watchLaterIds];
+      const [item] = copy.splice(idx, 1);
+      copy.splice(targetIdx, 0, item);
+      appState.watchLaterIds = copy;
+      saveState();
+      renderWatchlist();
+    }
+
+    function reorderWatchlistByDrop(sourceId, targetId) {
+      if (!sourceId || !targetId || sourceId === targetId) return;
+      const list = [...appState.watchLaterIds];
+      const fromIdx = list.indexOf(sourceId);
+      const toIdx = list.indexOf(targetId);
+      if (fromIdx === -1 || toIdx === -1) return;
+      const [moved] = list.splice(fromIdx, 1);
+      list.splice(toIdx, 0, moved);
+      appState.watchLaterIds = list;
+      saveState();
+      renderWatchlist();
+      showToast('Wachtrijvolgorde opgeslagen.');
+    }
+
+    /* === INSTELLINGEN, PODCAST CONFIG & JSON BACKUP/RESTORE === */
+    function extractChannelIdFromInput(inputVal) {
+      const trimmed = (inputVal || '').trim();
+      const match = trimmed.match(/UC[A-Za-z0-9_-]{20,}/);
+      return match ? match[0] : trimmed;
+    }
+
+    function renderSettingsLists() {
+      const ytList = document.getElementById('custom-youtube-list');
+      const ytChannels = appState.customYoutubeChannels || [];
+      ytList.innerHTML = ytChannels.length === 0
+        ? `<li class="text-xs text-zinc-500">Nog geen extra YouTube-kanalen toegevoegd.</li>`
+        : ytChannels.map(ch => `
+            <li class="flex items-center justify-between gap-3 px-3 py-2.5 rounded-lg bg-[#262626] border border-white/10">
+              <div class="min-w-0">
+                <p class="font-medium text-white truncate">${ch.name}</p>
+                <p class="text-xs font-mono text-zinc-400 truncate">${ch.channelId}</p>
+              </div>
+              <button type="button" data-dpad="settings" data-remove-yt="${ch.id}"
+                      class="min-h-[36px] px-3 py-1 rounded-md text-xs font-medium bg-white/10 hover:bg-red-500/20 hover:text-red-300 text-zinc-200 cursor-pointer shrink-0">
+                Verwijder
+              </button>
+            </li>
+          `).join('');
+
+      const podList = document.getElementById('custom-podcast-list');
+      const feeds = appState.podcastFeeds || [];
+      podList.innerHTML = feeds.map(pod => `
+        <li class="p-3 rounded-lg bg-[#262626] border border-white/10 space-y-2">
+          <div class="flex items-start justify-between gap-3">
+            <div class="min-w-0">
+              <p class="font-semibold text-white truncate">${pod.name}</p>
+              <p class="text-xs font-mono text-zinc-400 truncate">Audio: ${pod.audioRssUrl || 'Geen'}</p>
+              <p class="text-xs font-mono text-zinc-400 truncate">YouTube: ${pod.youtubeRssUrl || 'Geen'}</p>
+            </div>
+            ${!pod.isDefault ? `
+              <button type="button" data-dpad="settings" data-remove-pod="${pod.id}"
+                      class="min-h-[36px] px-3 py-1 rounded-md text-xs font-medium bg-white/10 hover:bg-red-500/20 hover:text-red-300 text-zinc-200 cursor-pointer shrink-0">
+                Verwijder
+              </button>
+            ` : `<span class="text-[11px] font-mono text-zinc-400 px-2 py-1 rounded bg-white/5 shrink-0">Standaard</span>`}
+          </div>
+          <div class="flex flex-wrap items-center gap-2 pt-1">
+            <label class="text-xs text-zinc-400 shrink-0" for="filter-edit-${pod.id}">Titel-filter:</label>
+            <input id="filter-edit-${pod.id}"
+                   type="text"
+                   value="${pod.titleFilter || ''}"
+                   placeholder="Geen filter (alles tonen)"
+                   data-edit-pod-filter="${pod.id}"
+                   data-dpad="settings"
+                   class="flex-1 min-w-[140px] min-h-[34px] px-2.5 py-1 rounded text-xs bg-[#181818] border border-white/10 text-white" />
+            <button type="button"
+                    data-save-pod-filter="${pod.id}"
+                    data-dpad="settings"
+                    class="min-h-[34px] px-3 py-1 rounded text-xs font-medium bg-white/10 hover:bg-white/20 text-white cursor-pointer">
+              Filter Toepassen
+            </button>
+          </div>
+        </li>
+      `).join('');
+    }
+
+    function exportBackupJson() {
+      const payload = {
+        app: 'CourtSide Hub',
+        exportedAt: new Date().toISOString(),
+        schemaVersion: 4,
+        state: appState
+      };
+      const blob = new Blob([JSON.stringify(payload, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      const dateStamp = new Date().toISOString().slice(0, 10);
+      a.href = url;
+      a.download = `courtside-hub-backup-${dateStamp}.json`;
+      document.body.appendChild(a);
+      a.click();
+      a.remove();
+      URL.revokeObjectURL(url);
+      addDebugLog('Backup', 'JSON backup geëxporteerd.', true);
+      showToast('Backup gedownload als .json bestand.');
+    }
+
+    function importBackupJson(file) {
+      if (!file) return;
+      const reader = new FileReader();
+      reader.onload = (e) => {
+        try {
+          const parsed = JSON.parse(e.target.result);
+          const incomingState = parsed.state || parsed;
+          if (!incomingState || typeof incomingState !== 'object') {
+            throw new Error('Ongeldig backup-formaat');
+          }
+
+          appState = {
+            ...structuredClone(DEFAULT_STATE),
+            ...incomingState,
+            revealedGameIds: Array.isArray(incomingState.revealedGameIds) ? incomingState.revealedGameIds : [],
+            watchedGameIds: Array.isArray(incomingState.watchedGameIds) ? incomingState.watchedGameIds : [],
+            watchLaterIds: Array.isArray(incomingState.watchLaterIds) ? incomingState.watchLaterIds : [],
+            customYoutubeChannels: Array.isArray(incomingState.customYoutubeChannels) ? incomingState.customYoutubeChannels : [],
+            podcastFeeds: Array.isArray(incomingState.podcastFeeds) && incomingState.podcastFeeds.length > 0
+              ? incomingState.podcastFeeds
+              : structuredClone(DEFAULT_PODCAST_FEEDS)
+          };
+
+          saveState();
+          populateTeamDropdown();
+          populateFeedSourceSelector();
+          applyTheme(appState.theme);
+          applyTeamBranding(appState.favoriteTeam);
+          updateGlobalSpoilerButton();
+          applyTvMode(appState.tvMode);
+          renderSettingsLists();
+          setupAutoRefreshTimer();
+          switchView(appState.defaultView || 'games');
+          loadGamesFeed(false);
+          loadPodcastsFeed(false);
+
+          addDebugLog('Backup', `Backup succesvol hersteld (${file.name}).`, true);
+          showToast('Backup succesvol hersteld en toegepast!');
+        } catch (err) {
+          addDebugLog('Backup', `Import mislukt: ${err.message}`, false);
+          showToast('Ongeldig backup-bestand. Kies een geldig CourtSide Hub .json bestand.');
+        }
+      };
+      reader.readAsText(file);
+    }
+
+    function openSettingsModal() {
+      document.getElementById('setting-default-view').value = appState.defaultView || 'games';
+      document.getElementById('setting-refresh-interval').value = String(appState.refreshIntervalMin || 30);
+      renderSettingsLists();
+      updatePwaUiState();
+      document.getElementById('settings-modal').classList.remove('hidden');
+      document.body.classList.add('modal-open');
+      setTimeout(() => document.getElementById('settings-close-btn').focus(), 60);
+    }
+
+    function closeSettingsModal() {
+      document.getElementById('settings-modal').classList.add('hidden');
+      document.body.classList.remove('modal-open');
+      document.getElementById('settings-open-btn').focus();
+    }
+
+    function setupAutoRefreshTimer() {
+      if (autoRefreshTimer) clearInterval(autoRefreshTimer);
+      const mins = Number(appState.refreshIntervalMin) || 30;
+      document.getElementById('refresh-interval-badge').textContent = `Auto-verversing: elke ${mins} min`;
+      autoRefreshTimer = setInterval(() => {
+        loadGamesFeed(false);
+        loadPodcastsFeed(false);
+      }, mins * 60 * 1000);
+    }
+
+    /* === PWA SERVICE WORKER, OFFLINE & INSTALL PROMPT (FASE 4) === */
+    function isStandaloneMode() {
+      return window.matchMedia('(display-mode: standalone)').matches || window.navigator.standalone === true;
+    }
+
+    function updatePwaUiState() {
+      const isStandalone = isStandaloneMode();
+      const isIos = /iphone|ipad|ipod/i.test(navigator.userAgent);
+      const headerBtn = document.getElementById('header-pwa-install-btn');
+      const settingsBtn = document.getElementById('settings-pwa-install-btn');
+      const iosGuide = document.getElementById('ios-install-guide');
+      const statusText = document.getElementById('settings-pwa-status');
+
+      statusText.textContent = `Service Worker: ${swStatusText} · Modus: ${isStandalone ? 'Geïnstalleerd (Standalone)' : 'Browser'}`;
+
+      if (isStandalone) {
+        headerBtn.classList.add('hidden');
+        headerBtn.classList.remove('flex');
+        settingsBtn.classList.add('hidden');
+        iosGuide.classList.add('hidden');
+        return;
+      }
+
+      if (deferredInstallPrompt) {
+        headerBtn.classList.remove('hidden');
+        headerBtn.classList.add('flex');
+        settingsBtn.classList.remove('hidden');
+      } else {
+        headerBtn.classList.add('hidden');
+        headerBtn.classList.remove('flex');
+        settingsBtn.classList.add('hidden');
+      }
+
+      if (isIos && !isStandalone) {
+        iosGuide.classList.remove('hidden');
+      } else {
+        iosGuide.classList.add('hidden');
+      }
+    }
+
+    async function triggerPwaInstall() {
+      if (!deferredInstallPrompt) return;
+      deferredInstallPrompt.prompt();
+      const { outcome } = await deferredInstallPrompt.userChoice;
+      addDebugLog('PWA', `Install prompt resultaat: ${outcome}`, outcome === 'accepted');
+      if (outcome === 'accepted') {
+        deferredInstallPrompt = null;
+        updatePwaUiState();
+        showToast('CourtSide Hub wordt geïnstalleerd!');
+      }
+    }
+
+    function registerServiceWorkerAndConnectivity() {
+      const offlineBanner = document.getElementById('offline-banner');
+      const syncOnline = () => {
+        offlineBanner.classList.toggle('hidden', navigator.onLine);
+      };
+      syncOnline();
+      window.addEventListener('online', () => {
+        syncOnline();
+        addDebugLog('Netwerk', 'Verbinding hersteld (Online)', true);
+        showToast('Internetverbinding hersteld.');
+      });
+      window.addEventListener('offline', () => {
+        syncOnline();
+        addDebugLog('Netwerk', 'Offline modus geactiveerd', false);
+        showToast('Offline modus — gecachete schil actief.');
+      });
+
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredInstallPrompt = e;
+        updatePwaUiState();
+      });
+
+      window.addEventListener('appinstalled', () => {
+        deferredInstallPrompt = null;
+        updatePwaUiState();
+        showToast('CourtSide Hub geïnstalleerd!');
+      });
+
+      if ('serviceWorker' in navigator) {
+        navigator.serviceWorker.register('sw.js').then((reg) => {
+          swStatusText = reg.active ? 'Actief' : 'Geregistreerd';
+          addDebugLog('ServiceWorker', `Geregistreerd op scope: ${reg.scope}`, true);
+          updatePwaUiState();
+        }).catch((err) => {
+          swStatusText = 'Fout';
+          addDebugLog('ServiceWorker', `Registratie mislukt: ${err.message}`, false);
+          updatePwaUiState();
+        });
+      } else {
+        swStatusText = 'Niet ondersteund';
+        updatePwaUiState();
+      }
+    }
+
+    /* === VERBORGEN DEBUG CONSOLE (FASE 4) === */
+    function getLocalStorageUsageText() {
+      const raw = localStorage.getItem(STORAGE_KEY) || '';
+      const bytes = new Blob([raw]).size;
+      const kb = (bytes / 1024).toFixed(2);
+      return `${kb} KB (${bytes} B)`;
+    }
+
+    function buildDebugReportText() {
+      const report = {
+        app: 'CourtSide Hub',
+        version: appState.version,
+        timestamp: new Date().toISOString(),
+        online: navigator.onLine,
+        serviceWorker: swStatusText,
+        displayMode: isStandaloneMode() ? 'standalone-pwa' : 'browser',
+        localStorageUsage: getLocalStorageUsageText(),
+        stateSummary: {
+          favoriteTeam: appState.favoriteTeam || 'neutraal',
+          globalSpoilersHidden: appState.globalSpoilersHidden,
+          watchedCount: appState.watchedGameIds.length,
+          watchLaterCount: appState.watchLaterIds.length,
+          customYoutubeChannels: appState.customYoutubeChannels.length,
+          podcastFeeds: appState.podcastFeeds.map(f => ({ name: f.name, filter: f.titleFilter, hasYt: Boolean(f.youtubeRssUrl) }))
+        },
+        activeGamesCount: activeGames.length,
+        podcastEpisodesCount: podcastEpisodes.length,
+        logs: debugLogs
+      };
+      return JSON.stringify(report, null, 2);
+    }
+
+    function openDebugModal() {
+      document.getElementById('dbg-sw-status').textContent = swStatusText;
+      document.getElementById('dbg-net-status').textContent = navigator.onLine ? 'Online' : 'Offline';
+      document.getElementById('dbg-storage-size').textContent = getLocalStorageUsageText();
+      document.getElementById('dbg-display-mode').textContent = isStandaloneMode() ? 'PWA Standalone' : 'Browser';
+      document.getElementById('debug-log-output').textContent = buildDebugReportText();
+
+      document.getElementById('debug-modal').classList.remove('hidden');
+      document.body.classList.add('modal-open');
+      setTimeout(() => document.getElementById('debug-close-btn').focus(), 60);
+    }
+
+    function closeDebugModal() {
+      document.getElementById('debug-modal').classList.add('hidden');
+      document.body.classList.remove('modal-open');
+      document.getElementById('version-trigger').focus();
+    }
+
+    function copyDebugLog() {
+      const text = buildDebugReportText();
+      if (navigator.clipboard && navigator.clipboard.writeText) {
+        navigator.clipboard.writeText(text).then(() => {
+          showToast('Debug log gekopieerd naar klembord voor Gemini!');
+        }).catch(() => fallbackCopyText(text));
+      } else {
+        fallbackCopyText(text);
+      }
+    }
+
+    function fallbackCopyText(text) {
+      const ta = document.createElement('textarea');
+      ta.value = text;
+      ta.style.position = 'fixed';
+      ta.style.opacity = '0';
+      document.body.appendChild(ta);
+      ta.select();
+      try {
+        document.execCommand('copy');
+        showToast('Debug log gekopieerd naar klembord!');
+      } catch (_) {
+        showToast('Kopiëren geblokkeerd door browser — selecteer tekst handmatig.');
+      }
+      ta.remove();
+    }
+
+    /* === VIEW NAVIGATIE === */
+    function switchView(viewName) {
+      appState.activeView = viewName;
+      saveState();
+
+      document.querySelectorAll('.app-view').forEach(el => el.classList.add('hidden'));
+      const target = document.getElementById(`view-${viewName}`);
+      if (target) target.classList.remove('hidden');
+
+      document.querySelectorAll('.view-tab').forEach(btn => {
+        const active = btn.dataset.view === viewName;
+        btn.classList.toggle('tab-active', active);
+        if (!active) {
+          btn.style.backgroundColor = 'var(--bg-elevated)';
+          btn.style.color = 'var(--text-secondary)';
+          btn.style.borderColor = 'var(--border-subtle)';
+        }
+      });
+
+      if (viewName === 'watchlist') renderWatchlist();
+      if (viewName === 'podcasts') renderPodcasts();
+    }
+
+    /* === KLEUR & CONTRAST HULPFUNCTIES === */
+    function hexToRgba(hex, alpha) {
+      const clean = hex.replace('#', '');
+      const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
+      const r = parseInt(full.substring(0, 2), 16);
+      const g = parseInt(full.substring(2, 4), 16);
+      const b = parseInt(full.substring(4, 6), 16);
+      return `rgba(${r}, ${g}, ${b}, ${alpha})`;
+    }
+
+    function getContrastTextColor(hex) {
+      const clean = hex.replace('#', '');
+      const full = clean.length === 3 ? clean.split('').map(c => c + c).join('') : clean;
+      const r = parseInt(full.substring(0, 2), 16);
+      const g = parseInt(full.substring(2, 4), 16);
+      const b = parseInt(full.substring(4, 6), 16);
+      const luminance = (0.299 * r + 0.587 * g + 0.114 * b) / 255;
+      return luminance > 0.62 ? '#111827' : '#FFFFFF';
+    }
+
+    function getTeamById(teamId) {
+      return NBA_TEAMS.find(t => t.id === teamId) || null;
+    }
+
+    function getGameById(gameId) {
+      return activeGames.find(g => g.id === gameId) || FALLBACK_NBA_GAMES.find(g => g.id === gameId) || null;
+    }
+
+    /* === TEAM BRANDING MODULE === */
+    function populateTeamDropdown() {
+      const select = document.getElementById('team-selector');
+      select.innerHTML = '';
+
+      const defaultOpt = document.createElement('option');
+      defaultOpt.value = '';
+      defaultOpt.textContent = 'Alle Teams (Neutraal)';
+      select.appendChild(defaultOpt);
+
+      ['Eastern Conference', 'Western Conference'].forEach(conf => {
+        const group = document.createElement('optgroup');
+        group.label = conf;
+        NBA_TEAMS.filter(t => t.conf === conf).forEach(team => {
+          const opt = document.createElement('option');
+          opt.value = team.id;
+          opt.textContent = `${team.id} — ${team.name}`;
+          group.appendChild(opt);
+        });
+        select.appendChild(group);
+      });
+
+      select.value = appState.favoriteTeam || '';
+    }
+
+    function applyTeamBranding(teamId) {
+      const root = document.documentElement;
+      const team = getTeamById(teamId);
+      const banner = document.getElementById('selected-team-bar');
+      const nameEl = document.getElementById('selected-team-name');
+      const confEl = document.getElementById('selected-team-conference');
+      const swatchEl = document.getElementById('selected-team-swatch');
+
+      if (!team) {
+        root.style.setProperty('--team-accent', '#3B82F6');
+        root.style.setProperty('--team-accent-secondary', '#1D4ED8');
+        root.style.setProperty('--team-accent-glow', 'rgba(59, 130, 246, 0.45)');
+        root.style.setProperty('--team-accent-soft', 'rgba(59, 130, 246, 0.14)');
+        root.style.setProperty('--team-accent-contrast', '#FFFFFF');
+        banner.classList.add('hidden');
+        return;
+      }
+
+      root.style.setProperty('--team-accent', team.accent);
+      root.style.setProperty('--team-accent-secondary', team.secondary);
+      root.style.setProperty('--team-accent-glow', hexToRgba(team.accent, 0.48));
+      root.style.setProperty('--team-accent-soft', hexToRgba(team.accent, 0.15));
+      root.style.setProperty('--team-accent-contrast', getContrastTextColor(team.accent));
+
+      nameEl.textContent = team.name;
+      confEl.textContent = team.conf;
+      swatchEl.style.backgroundColor = team.accent;
+      banner.classList.remove('hidden');
+    }
+
+    /* === DARK / LIGHT THEME MODULE === */
+    function applyTheme(theme) {
+      const htmlEl = document.documentElement;
+      const iconContainer = document.getElementById('theme-icon');
+      const metaTheme = document.querySelector('meta[name="theme-color"]');
+
+      if (theme === 'dark') {
+        htmlEl.classList.add('dark');
+        if (metaTheme) metaTheme.setAttribute('content', '#121212');
+        iconContainer.innerHTML = `
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <circle cx="12" cy="12" r="4"></circle>
+            <path d="M12 2v2M12 20v2M4.93 4.93l1.41 1.41M17.66 17.66l1.41 1.41M2 12h2M20 12h2M6.34 17.66l-1.41 1.41M19.07 4.93l-1.41 1.41"></path>
+          </svg>`;
+      } else {
+        htmlEl.classList.remove('dark');
+        if (metaTheme) metaTheme.setAttribute('content', '#F3F4F6');
+        iconContainer.innerHTML = `
+          <svg class="w-5 h-5" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M12 3a6 6 0 0 0 9 9 9 9 0 1 1-9-9Z"></path>
+          </svg>`;
+      }
+    }
+
+    /* === SPOILER LOGICA === */
+    function isGameScoreVisible(gameId) {
+      if (!appState.globalSpoilersHidden) return true;
+      if (appState.watchedGameIds.includes(gameId)) return true;
+      if (appState.revealedGameIds.includes(gameId)) return true;
+      return false;
+    }
+
+    function updateGlobalSpoilerButton() {
+      const btn = document.getElementById('global-spoiler-btn');
+      const iconEl = document.getElementById('global-spoiler-icon');
+      const labelEl = document.getElementById('global-spoiler-label');
+
+      if (appState.globalSpoilersHidden) {
+        btn.setAttribute('aria-pressed', 'true');
+        btn.classList.remove('btn-team-accent');
+        labelEl.textContent = 'Scores Verborgen';
+        iconEl.innerHTML = `
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path>
+            <path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path>
+            <path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path>
+            <line x1="2" y1="2" x2="22" y2="22"></line>
+          </svg>`;
+      } else {
+        btn.setAttribute('aria-pressed', 'false');
+        btn.classList.add('btn-team-accent');
+        labelEl.textContent = 'Alle Scores Zichtbaar';
+        iconEl.innerHTML = `
+          <svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
+            <path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path>
+            <circle cx="12" cy="12" r="3"></circle>
+          </svg>`;
+      }
+    }
+
+    function toggleSingleGameSpoiler(gameId) {
+      const idx = appState.revealedGameIds.indexOf(gameId);
+      if (idx === -1) {
+        appState.revealedGameIds.push(gameId);
+      } else {
+        if (appState.watchedGameIds.includes(gameId)) {
+          appState.watchedGameIds = appState.watchedGameIds.filter(id => id !== gameId);
+        }
+        appState.revealedGameIds.splice(idx, 1);
+      }
+      saveState();
+      renderGames();
+      renderWatchlist();
+    }
+
+    function markGameAsWatched(gameId, autoFromRecap = false) {
+      const wasWatched = appState.watchedGameIds.includes(gameId);
+      const removedFromQueue = appState.watchLaterIds.includes(gameId);
+
+      if (autoFromRecap) {
+        if (!wasWatched) appState.watchedGameIds.push(gameId);
+        if (!appState.revealedGameIds.includes(gameId)) appState.revealedGameIds.push(gameId);
+        appState.watchLaterIds = appState.watchLaterIds.filter(id => id !== gameId);
+        saveState();
+        renderGames();
+        renderWatchlist();
+        return;
+      }
+
+      if (wasWatched) {
+        appState.watchedGameIds = appState.watchedGameIds.filter(id => id !== gameId);
+        showToast('Gemarkeerd als onbekeken.');
+      } else {
+        appState.watchedGameIds.push(gameId);
+        if (!appState.revealedGameIds.includes(gameId)) appState.revealedGameIds.push(gameId);
+        appState.watchLaterIds = appState.watchLaterIds.filter(id => id !== gameId);
+        showToast(removedFromQueue
+          ? 'Bekeken — score onthuld en verwijderd uit Watch Later.'
+          : 'Bekeken — score automatisch onthuld.');
+      }
+      saveState();
+      renderGames();
+      renderWatchlist();
+    }
+
+    function toggleWatchLater(gameId) {
+      const exists = appState.watchLaterIds.includes(gameId);
+      if (exists) {
+        appState.watchLaterIds = appState.watchLaterIds.filter(id => id !== gameId);
+        showToast('Verwijderd uit Watch Later wachtrij.');
+      } else {
+        appState.watchLaterIds.push(gameId);
+        showToast('Toegevoegd aan Watch Later wachtrij.');
+      }
+      saveState();
+      renderGames();
+      renderWatchlist();
+    }
+
+    /* === YOUTUBE IFRAME THEATER & TV FULLSCREEN SPELER === */
+    window.onYouTubeIframeAPIReady = function () {
+      ytApiReady = true;
+    };
+
+    function updateTheaterMuteButton() {
+      const label = document.getElementById('theater-mute-label');
+      if (label) {
+        label.textContent = isTheaterMuted ? 'Geluid Uit (Klik = Aan)' : 'Geluid Aan';
+      }
+    }
+
+    function openTheaterPlayer(gameId) {
+      const game = getGameById(gameId);
+      if (!game) return;
+
+      theaterModeType = 'game';
+      currentTheaterGameId = gameId;
+      isTheaterMuted = false;
+      updateTheaterMuteButton();
+
+      const modal = document.getElementById('theater-modal');
+      document.getElementById('theater-title').textContent = `${game.away.name} @ ${game.home.name} — Recap`;
+      document.getElementById('theater-source-badge').textContent = `${game.sourceLabel || 'NBA YouTube'} · 1080p voorkeur`;
+      document.getElementById('theater-mode-subtitle').textContent = 'Spoiler-vrije modus actief';
+      document.getElementById('theater-footer-hint').innerHTML = 'Sluit automatisch bij einde video (<code class="font-mono text-zinc-300">onStateChange === 0</code>), onthult score &amp; verwijdert uit wachtrij.';
+      document.getElementById('theater-external-link').href = `https://www.youtube.com/watch?v=${game.youtubeVideoId}`;
+      document.getElementById('theater-fallback-overlay').classList.add('hidden');
+
+      currentTheaterFullscreen = appState.tvMode || window.innerWidth >= 1920;
+      modal.classList.toggle('is-tv-fullscreen', currentTheaterFullscreen);
+      document.getElementById('theater-fs-label').textContent = currentTheaterFullscreen ? 'Standaard Formaat' : 'TV Fullscreen';
+
+      modal.classList.remove('hidden');
+      document.body.classList.add('modal-open');
+
+      mountYouTubePlayer(game.youtubeVideoId);
+
+      setTimeout(() => {
+        const closeBtn = document.getElementById('theater-close-btn');
+        if (closeBtn) closeBtn.focus();
+      }, 60);
+    }
+
+    function mountYouTubePlayer(videoId) {
+      clearTimeout(theaterMuteCheckTimer);
+      const mountParent = document.querySelector('.theater-video-wrap');
+      const oldMount = document.getElementById('yt-player-mount');
+      if (oldMount) oldMount.remove();
+
+      const freshMount = document.createElement('div');
+      freshMount.id = 'yt-player-mount';
+      mountParent.insertBefore(freshMount, document.getElementById('theater-fallback-overlay'));
+
+      if (ytPlayer && typeof ytPlayer.destroy === 'function') {
+        try { ytPlayer.destroy(); } catch (_) {}
+        ytPlayer = null;
+      }
+
+      if (window.YT && window.YT.Player) {
+        ytApiReady = true;
+      }
+
+      if (!ytApiReady) {
+        const iframe = document.createElement('iframe');
+        iframe.src = `https://www.youtube-nocookie.com/embed/${videoId}?autoplay=1&mute=1&rel=0&vq=hd1080&enablejsapi=1`;
+        iframe.allow = 'accelerometer; autoplay; clipboard-write; encrypted-media; gyroscope; picture-in-picture; fullscreen';
+        iframe.allowFullscreen = true;
+        freshMount.appendChild(iframe);
+        isTheaterMuted = true;
+        updateTheaterMuteButton();
+        return;
+      }
+
+      ytPlayer = new YT.Player('yt-player-mount', {
+        videoId: videoId,
+        playerVars: {
+          autoplay: 1,
+          rel: 0,
+          modestbranding: 1,
+          playsinline: 1,
+          fs: 1,
+          vq: 'hd1080',
+          origin: window.location.origin
+        },
+        events: {
+          onReady: (event) => {
+            try {
+              event.target.setPlaybackQuality('hd1080');
+              event.target.playVideo();
+
+              theaterMuteCheckTimer = setTimeout(() => {
+                if (!ytPlayer || typeof ytPlayer.getPlayerState !== 'function') return;
+                const state = ytPlayer.getPlayerState();
+                if (state !== 1 && state !== 3) {
+                  ytPlayer.mute();
+                  ytPlayer.playVideo();
+                  isTheaterMuted = true;
+                  updateTheaterMuteButton();
+                }
+              }, 1100);
+            } catch (_) {}
+          },
+          onStateChange: (event) => {
+            if (event.data === 0) {
+              finishTheaterAndUnlock();
+            }
+          },
+          onError: () => {
+            document.getElementById('theater-fallback-overlay').classList.remove('hidden');
+          }
+        }
+      });
+    }
+
+    function finishTheaterAndUnlock() {
+      const mode = theaterModeType;
+      const finishedId = currentTheaterGameId;
+      closeTheaterPlayer();
+      if (mode === 'game' && finishedId) {
+        markGameAsWatched(finishedId, true);
+        const game = getGameById(finishedId);
+        if (game) {
+          showToast(`Recap afgerond! ${game.away.id} ${game.away.score} - ${game.home.score} ${game.home.id} onthuld.`);
+        }
+      } else if (mode === 'podcast') {
+        showToast('Podcast video afgerond.');
+      }
+    }
+
+    function closeTheaterPlayer() {
+      clearTimeout(theaterMuteCheckTimer);
+      const modal = document.getElementById('theater-modal');
+      modal.classList.add('hidden');
+      document.body.classList.remove('modal-open');
+
+      if (ytPlayer && typeof ytPlayer.destroy === 'function') {
+        try {
+          ytPlayer.stopVideo();
+          ytPlayer.destroy();
+        } catch (_) {}
+        ytPlayer = null;
+      }
+
+      const mount = document.getElementById('yt-player-mount');
+      if (mount) mount.innerHTML = '';
+
+      const prevGameId = currentTheaterGameId;
+      currentTheaterGameId = null;
+
+      if (prevGameId) {
+        const triggerBtn = document.querySelector(`button[data-action="play-recap"][data-game-id="${prevGameId}"]`);
+        if (triggerBtn) triggerBtn.focus();
+      }
+    }
+
+    /* === DONKERE BOXSCORE MODAL === */
+    function openBoxscoreModal(gameId) {
+      const game = getGameById(gameId);
+      if (!game) return;
+
+      currentBoxscoreGameId = gameId;
+      currentBoxscoreTeamSide = 'away';
+
+      const modal = document.getElementById('boxscore-modal');
+      const guardEl = document.getElementById('boxscore-spoiler-guard');
+      const contentEl = document.getElementById('boxscore-content');
+
+      document.getElementById('boxscore-meta').textContent = `${game.arena} · ${game.tipoff}`;
+      document.getElementById('boxscore-title').textContent = `${game.away.name} @ ${game.home.name}`;
+
+      const scoreVisible = isGameScoreVisible(gameId);
+      if (!scoreVisible) {
+        guardEl.classList.remove('hidden');
+        contentEl.classList.add('hidden');
+      } else {
+        guardEl.classList.add('hidden');
+        contentEl.classList.remove('hidden');
+        renderBoxscoreData(game);
+      }
+
+      modal.classList.remove('hidden');
+      document.body.classList.add('modal-open');
+
+      setTimeout(() => {
+        const focusTarget = scoreVisible
+          ? document.getElementById('bs-tab-away')
+          : document.getElementById('boxscore-reveal-confirm-btn');
+        if (focusTarget) focusTarget.focus();
+      }, 60);
+    }
+
+    function renderBoxscoreData(game) {
+      document.getElementById('bs-away-crest').innerHTML = renderTeamCrest(game.away.id);
+      document.getElementById('bs-away-name').textContent = game.away.name;
+      document.getElementById('bs-away-record').textContent = `Uit · ${game.away.record}`;
+      document.getElementById('bs-away-score').textContent = game.away.score;
+
+      document.getElementById('bs-home-crest').innerHTML = renderTeamCrest(game.home.id);
+      document.getElementById('bs-home-name').textContent = game.home.name;
+      document.getElementById('bs-home-record').textContent = `Thuis · ${game.home.record}`;
+      document.getElementById('bs-home-score').textContent = game.home.score;
+
+      document.getElementById('bs-status-center').textContent = game.status;
+
+      const qData = game.boxscore.quarters;
+      document.getElementById('bs-quarters-head').innerHTML =
+        `<th class="py-2 pr-3 font-medium">Team</th>` +
+        qData.labels.map((lbl, idx) =>
+          `<th class="py-2 px-2 text-right font-medium ${idx === qData.labels.length - 1 ? 'text-white font-bold' : ''}">${lbl}</th>`
+        ).join('');
+
+      document.getElementById('bs-quarters-body').innerHTML = `
+        <tr class="border-b border-white/5">
+          <td class="py-2 pr-3 font-bold text-white">${game.away.id}</td>
+          ${qData.away.map((val, idx) => `<td class="py-2 px-2 text-right ${idx === qData.away.length - 1 ? 'font-bold text-white' : 'text-zinc-300'}">${val}</td>`).join('')}
+        </tr>
+        <tr>
+          <td class="py-2 pr-3 font-bold text-white">${game.home.id}</td>
+          ${qData.home.map((val, idx) => `<td class="py-2 px-2 text-right ${idx === qData.home.length - 1 ? 'font-bold text-white' : 'text-zinc-300'}">${val}</td>`).join('')}
+        </tr>
+      `;
+
+      document.getElementById('bs-tab-away').textContent = `${game.away.name} (${game.away.id})`;
+      document.getElementById('bs-tab-home').textContent = `${game.home.name} (${game.home.id})`;
+      renderBoxscorePlayers(game);
+    }
+
+    function renderBoxscorePlayers(game) {
+      const tabAway = document.getElementById('bs-tab-away');
+      const tabHome = document.getElementById('bs-tab-home');
+      const isAway = currentBoxscoreTeamSide === 'away';
+
+      tabAway.setAttribute('aria-selected', String(isAway));
+      tabHome.setAttribute('aria-selected', String(!isAway));
+
+      const applyTabStyle = (btn, active) => {
+        if (active) {
+          btn.style.backgroundColor = 'var(--team-accent-soft)';
+          btn.style.borderColor = 'var(--team-accent)';
+          btn.style.color = 'var(--team-accent)';
+        } else {
+          btn.style.backgroundColor = '#262626';
+          btn.style.borderColor = 'rgba(255,255,255,0.10)';
+          btn.style.color = '#A1A1AA';
+        }
+      };
+
+      applyTabStyle(tabAway, isAway);
+      applyTabStyle(tabHome, !isAway);
+
+      const players = isAway ? game.boxscore.awayPlayers : game.boxscore.homePlayers;
+      const tbody = document.getElementById('bs-players-body');
+
+      tbody.innerHTML = players.map((p, idx) => `
+        <tr class="${idx === 0 ? 'bg-white/[0.03]' : 'hover:bg-white/[0.02]'} transition-colors">
+          <td class="py-3 px-4">
+            <div class="font-semibold text-white">${p.name}</div>
+            <div class="text-xs text-zinc-500">${p.pos}${idx === 0 ? ' · Topscorer' : ''}</div>
+          </td>
+          <td class="py-3 px-3 text-right font-mono text-zinc-400">${p.min}</td>
+          <td class="py-3 px-3 text-right font-mono font-bold text-white">${p.pts}</td>
+          <td class="py-3 px-3 text-right font-mono text-zinc-300">${p.reb}</td>
+          <td class="py-3 px-3 text-right font-mono text-zinc-300">${p.ast}</td>
+          <td class="py-3 px-3 text-right font-mono text-zinc-300">${p.stl}</td>
+          <td class="py-3 px-4 text-right font-mono text-zinc-300">${p.blk}</td>
+        </tr>
+      `).join('');
+    }
+
+    function closeBoxscoreModal() {
+      const modal = document.getElementById('boxscore-modal');
+      modal.classList.add('hidden');
+      document.body.classList.remove('modal-open');
+
+      const prevGameId = currentBoxscoreGameId;
+      currentBoxscoreGameId = null;
+
+      if (prevGameId) {
+        const triggerBtn = document.querySelector(`button[data-action="open-boxscore"][data-game-id="${prevGameId}"]`);
+        if (triggerBtn) triggerBtn.focus();
+      }
+    }
+
+    /* === WEDSTRIJDEN RENDERING === */
+    function renderTeamCrest(teamId) {
+      const team = getTeamById(teamId);
+      const bg = team ? hexToRgba(team.accent, 0.16) : 'rgba(148, 163, 184, 0.16)';
+      const border = team ? hexToRgba(team.accent, 0.42) : 'rgba(148, 163, 184, 0.32)';
+      const color = team ? team.accent : '#94A3B8';
+      return `
+        <div class="w-11 h-11 sm:w-12 sm:h-12 rounded-xl flex items-center justify-center font-bold text-sm tracking-tight shrink-0 tabular-nums"
+             style="background-color: ${bg}; border: 1px solid ${border}; color: ${color};">
+          ${teamId}
+        </div>
+      `;
+    }
+
+    function updateFilterCounts() {
+      const allCount = activeGames.length;
+      const classicsCount = activeGames.filter(g => g.instantClassics && g.instantClassics.length > 0).length;
+      const unwatchedCount = activeGames.filter(g => !appState.watchedGameIds.includes(g.id)).length;
+
+      document.getElementById('count-all').textContent = allCount;
+      document.getElementById('count-classics').textContent = classicsCount;
+      document.getElementById('count-unwatched').textContent = unwatchedCount;
+
+      document.querySelectorAll('.filter-tab').forEach(btn => {
+        const isActive = btn.dataset.filter === appState.activeFilter;
+        btn.classList.toggle('tab-active', isActive);
+        if (!isActive) {
+          btn.style.backgroundColor = 'var(--bg-elevated)';
+          btn.style.color = 'var(--text-secondary)';
+          btn.style.borderColor = 'var(--border-subtle)';
+        }
+      });
+    }
+
+    function getFilteredGames() {
+      let list = [...activeGames];
+
+      if (appState.activeFilter === 'classics') {
+        list = list.filter(g => g.instantClassics && g.instantClassics.length > 0);
+      } else if (appState.activeFilter === 'unwatched') {
+        list = list.filter(g => !appState.watchedGameIds.includes(g.id));
+      }
+
+      if (appState.favoriteTeam) {
+        list.sort((a, b) => {
+          const aFav = a.away.id === appState.favoriteTeam || a.home.id === appState.favoriteTeam ? 1 : 0;
+          const bFav = b.away.id === appState.favoriteTeam || b.home.id === appState.favoriteTeam ? 1 : 0;
+          return bFav - aFav;
+        });
+      }
+
+      return list;
+    }
+
+    function renderGames() {
+      updateFilterCounts();
+      const grid = document.getElementById('games-grid');
+      const emptyState = document.getElementById('empty-state');
+      const games = getFilteredGames();
+
+      if (games.length === 0) {
+        grid.innerHTML = '';
+        emptyState.classList.remove('hidden');
+        return;
+      }
+
+      emptyState.classList.add('hidden');
+
+      grid.innerHTML = games.map(game => {
+        const scoreVisible = isGameScoreVisible(game.id);
+        const isWatched = appState.watchedGameIds.includes(game.id);
+        const inWatchlist = appState.watchLaterIds.includes(game.id);
+        const isFavGame = appState.favoriteTeam &&
+          (game.away.id === appState.favoriteTeam || game.home.id === appState.favoriteTeam);
+
+        const awayWon = game.away.score > game.home.score;
+        const homeWon = game.home.score > game.away.score;
+
+        const classicBadgesHtml = (game.instantClassics || []).map(badge => {
+          const variantClass = badge.variant === 'buzzer'
+            ? 'classic-badge--buzzer'
+            : badge.variant === 'fifty'
+              ? 'classic-badge--fifty'
+              : badge.variant === 'comeback'
+                ? 'classic-badge--comeback'
+                : '';
+          return `<span class="classic-badge ${variantClass}">${badge.label}</span>`;
+        }).join('');
+
+        const statusText = scoreVisible ? game.status : 'Recap beschikbaar';
+
+        const eyeIconHtml = scoreVisible
+          ? `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M2 12s3-7 10-7 10 7 10 7-3 7-10 7-10-7-10-7Z"></path><circle cx="12" cy="12" r="3"></circle></svg>`
+          : `<svg class="w-4 h-4" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round"><path d="M9.88 9.88a3 3 0 1 0 4.24 4.24"></path><path d="M10.73 5.08A10.43 10.43 0 0 1 12 5c7 0 10 7 10 7a13.16 13.16 0 0 1-1.67 2.68"></path><path d="M6.61 6.61A13.526 13.526 0 0 0 2 12s3 7 10 7a9.74 9.74 0 0 0 5.39-1.61"></path><line x1="2" y1="2" x2="22" y2="22"></line></svg>`;
+
+        return `
+          <article class="hub-card rounded-2xl p-5 sm:p-6 flex flex-col justify-between gap-5 ${isFavGame ? 'is-favorite-matchup' : ''}"
+                   data-game-id="${game.id}">
+
+            <div>
+              <div class="flex items-start justify-between gap-3 mb-4">
+                <div class="flex flex-col gap-1.5 min-w-0">
+                  <div class="flex flex-wrap items-center gap-2 text-xs" style="color: var(--text-muted);">
+                    <span class="font-medium" style="color: var(--text-secondary);">${statusText}</span>
+                    <span aria-hidden="true">·</span>
+                    <span>${game.tipoff}</span>
+                    ${isFavGame ? `<span aria-hidden="true">·</span><span class="font-bold" style="color: var(--team-accent);">Jouw Team</span>` : ''}
+                  </div>
+                  ${classicBadgesHtml ? `<div class="flex flex-wrap items-center gap-2 mt-0.5">${classicBadgesHtml}</div>` : ''}
+                </div>
+
+                <button type="button"
+                        data-dpad="card"
+                        data-action="toggle-spoiler"
+                        data-game-id="${game.id}"
+                        aria-label="${scoreVisible ? 'Verberg score voor ' + game.away.id + ' tegen ' + game.home.id : 'Toon score voor ' + game.away.id + ' tegen ' + game.home.id}"
+                        aria-pressed="${scoreVisible}"
+                        title="${scoreVisible ? 'Score verbergen' : 'Score onthullen'}"
+                        class="min-h-[44px] min-w-[44px] px-3 rounded-xl border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center gap-1.5 text-xs font-medium shrink-0 cursor-pointer transition-colors"
+                        style="color: ${scoreVisible ? 'var(--team-accent)' : 'var(--text-secondary)'};">
+                  ${eyeIconHtml}
+                  <span class="hidden sm:inline">${scoreVisible ? 'Zichtbaar' : 'Verborgen'}</span>
+                </button>
+              </div>
+
+              <div class="flex flex-col gap-3">
+                <div class="flex items-center justify-between gap-3 py-1">
+                  <div class="flex items-center gap-3.5 min-w-0">
+                    ${renderTeamCrest(game.away.id)}
+                    <div class="min-w-0">
+                      <p class="text-base sm:text-lg font-bold truncate ${scoreVisible && awayWon ? '' : 'opacity-90'}">
+                        ${game.away.name}
+                      </p>
+                      <p class="text-xs tabular-nums" style="color: var(--text-muted);">
+                        Uit · ${game.away.record}
+                      </p>
+                    </div>
+                  </div>
+                  <div class="score-box text-right shrink-0">
+                    ${scoreVisible
+                      ? `<span class="font-mono text-2xl sm:text-3xl font-bold tabular-nums ${awayWon ? '' : 'opacity-55'}">${game.away.score}</span>`
+                      : `<span class="score-masked font-mono text-xl sm:text-2xl font-bold px-3 py-1 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)]" style="color: var(--text-muted);" aria-label="Score verborgen">•••</span>`
+                    }
+                  </div>
+                </div>
+
+                <div class="h-px w-full bg-[var(--border-subtle)]" aria-hidden="true"></div>
+
+                <div class="flex items-center justify-between gap-3 py-1">
+                  <div class="flex items-center gap-3.5 min-w-0">
+                    ${renderTeamCrest(game.home.id)}
+                    <div class="min-w-0">
+                      <p class="text-base sm:text-lg font-bold truncate ${scoreVisible && homeWon ? '' : 'opacity-90'}">
+                        ${game.home.name}
+                      </p>
+                      <p class="text-xs tabular-nums" style="color: var(--text-muted);">
+                        Thuis · ${game.home.record}
+                      </p>
+                    </div>
+                  </div>
+                  <div class="score-box text-right shrink-0">
+                    ${scoreVisible
+                      ? `<span class="font-mono text-2xl sm:text-3xl font-bold tabular-nums ${homeWon ? '' : 'opacity-55'}">${game.home.score}</span>`
+                      : `<span class="score-masked font-mono text-xl sm:text-2xl font-bold px-3 py-1 rounded-lg bg-[var(--bg-elevated)] border border-[var(--border-subtle)]" style="color: var(--text-muted);" aria-label="Score verborgen">•••</span>`
+                    }
+                  </div>
+                </div>
+              </div>
+
+              <div class="mt-4 pt-3 border-t border-[var(--border-subtle)] text-xs sm:text-sm" style="color: var(--text-secondary);">
+                <p class="leading-relaxed">
+                  ${scoreVisible ? game.topPerformersSpoiler : game.teaser}
+                </p>
+                <p class="text-xs mt-1.5" style="color: var(--text-muted);">
+                  ${game.arena} · ${game.durationRecap}
+                </p>
+              </div>
+            </div>
+
+            <div class="flex flex-wrap items-center gap-2 pt-1">
+              <button type="button"
+                      data-dpad="card"
+                      data-action="play-recap"
+                      data-game-id="${game.id}"
+                      class="btn-team-accent flex-1 min-w-[135px] min-h-[44px] px-4 py-2.5 rounded-xl text-sm font-semibold flex items-center justify-center gap-2 whitespace-nowrap cursor-pointer">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="currentColor" aria-hidden="true">
+                  <polygon points="6 3 20 12 6 21 6 3"></polygon>
+                </svg>
+                <span>Bekijk Recap</span>
+              </button>
+
+              <button type="button"
+                      data-dpad="card"
+                      data-action="open-boxscore"
+                      data-game-id="${game.id}"
+                      class="min-h-[44px] px-3.5 py-2.5 rounded-xl text-xs sm:text-sm font-medium border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors"
+                      style="color: var(--text-primary);">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M3 3v18h18"></path>
+                  <path d="M18 17V9"></path>
+                  <path d="M13 17V5"></path>
+                  <path d="M8 17v-3"></path>
+                </svg>
+                <span>Boxscore</span>
+              </button>
+
+              <button type="button"
+                      data-dpad="card"
+                      data-action="toggle-watched"
+                      data-game-id="${game.id}"
+                      aria-pressed="${isWatched}"
+                      aria-label="${isWatched ? 'Bekeken' : 'Markeer als bekeken'}"
+                      title="${isWatched ? 'Bekeken (score ontgrendeld)' : 'Markeer als bekeken'}"
+                      class="min-h-[44px] px-3 py-2.5 rounded-xl text-xs sm:text-sm font-medium border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center gap-1.5 whitespace-nowrap cursor-pointer transition-colors"
+                      style="${isWatched ? 'border-color: var(--team-accent); color: var(--team-accent); background-color: var(--team-accent-soft);' : 'color: var(--text-secondary);'}">
+                <svg class="w-4 h-4 shrink-0" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2.2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <polyline points="20 6 9 17 4 12"></polyline>
+                </svg>
+                <span class="hidden sm:inline">${isWatched ? 'Bekeken' : 'Bekeken?'}</span>
+              </button>
+
+              <button type="button"
+                      data-dpad="card"
+                      data-action="toggle-watchlist"
+                      data-game-id="${game.id}"
+                      aria-pressed="${inWatchlist}"
+                      aria-label="${inWatchlist ? 'Verwijder uit Watch Later' : 'Zet in Watch Later'}"
+                      title="${inWatchlist ? 'In Watch Later wachtrij' : 'Toevoegen aan Watch Later'}"
+                      class="min-h-[44px] min-w-[44px] px-3 py-2.5 rounded-xl text-xs font-medium border border-[var(--border-subtle)] bg-[var(--bg-elevated)] hover:bg-black/5 dark:hover:bg-white/5 flex items-center justify-center cursor-pointer transition-colors"
+                      style="${inWatchlist ? 'border-color: var(--team-accent); color: var(--team-accent);' : 'color: var(--text-secondary);'}">
+                <svg class="w-4 h-4" viewBox="0 0 24 24" fill="${inWatchlist ? 'currentColor' : 'none'}" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" aria-hidden="true">
+                  <path d="M19 21l-7-5-7 5V5a2 2 0 0 1 2-2h10a2 2 0 0 1 2 2z"></path>
+                </svg>
+              </button>
+            </div>
+          </article>
+        `;
+      }).join('');
+    }
+
+    /* === TV D-PAD / TOETSENBORD SPATIAL NAVIGATIE === */
+    function getFocusableDpadElements() {
+      const theaterOpen = !document.getElementById('theater-modal').classList.contains('hidden');
+      const boxscoreOpen = !document.getElementById('boxscore-modal').classList.contains('hidden');
+      const settingsOpen = !document.getElementById('settings-modal').classList.contains('hidden');
+      const debugOpen = !document.getElementById('debug-modal').classList.contains('hidden');
+
+      let scope = document;
+      if (theaterOpen) scope = document.getElementById('theater-modal');
+      else if (boxscoreOpen) scope = document.getElementById('boxscore-modal');
+      else if (settingsOpen) scope = document.getElementById('settings-modal');
+      else if (debugOpen) scope = document.getElementById('debug-modal');
+
+      return Array.from(scope.querySelectorAll('[data-dpad]')).filter(el => {
+        const style = window.getComputedStyle(el);
+        return !el.disabled && style.display !== 'none' && style.visibility !== 'hidden' && el.offsetParent !== null;
+      });
+    }
+
+    function clearDpadFocusClass() {
+      document.querySelectorAll('.dpad-focused').forEach(el => el.classList.remove('dpad-focused'));
+    }
+
+    function moveDpadFocus(direction) {
+      const candidates = getFocusableDpadElements();
+      if (candidates.length === 0) return;
+
+      const active = document.activeElement;
+      const currentIdx = candidates.indexOf(active);
+
+      if (currentIdx === -1) {
+        clearDpadFocusClass();
+        candidates[0].focus();
+        candidates[0].classList.add('dpad-focused');
+        return;
+      }
+
+      const currentRect = active.getBoundingClientRect();
+      const cx = currentRect.left + currentRect.width / 2;
+      const cy = currentRect.top + currentRect.height / 2;
+
+      let bestCandidate = null;
+      let bestScore = Infinity;
+
+      candidates.forEach(el => {
+        if (el === active) return;
+        const r = el.getBoundingClientRect();
+        const ex = r.left + r.width / 2;
+        const ey = r.top + r.height / 2;
+        const dx = ex - cx;
+        const dy = ey - cy;
+
+        let isValidDirection = false;
+        let primaryDist = 0;
+        let secondaryDist = 0;
+
+        if (direction === 'ArrowRight' && dx > 12) {
+          isValidDirection = true;
+          primaryDist = dx;
+          secondaryDist = Math.abs(dy) * 2.2;
+        } else if (direction === 'ArrowLeft' && dx < -12) {
+          isValidDirection = true;
+          primaryDist = -dx;
+          secondaryDist = Math.abs(dy) * 2.2;
+        } else if (direction === 'ArrowDown' && dy > 12) {
+          isValidDirection = true;
+          primaryDist = dy;
+          secondaryDist = Math.abs(dx) * 1.4;
+        } else if (direction === 'ArrowUp' && dy < -12) {
+          isValidDirection = true;
+          primaryDist = -dy;
+          secondaryDist = Math.abs(dx) * 1.4;
+        }
+
+        if (isValidDirection) {
+          const score = primaryDist + secondaryDist;
+          if (score < bestScore) {
+            bestScore = score;
+            bestCandidate = el;
+          }
+        }
+      });
+
+      if (bestCandidate) {
+        clearDpadFocusClass();
+        bestCandidate.focus({ preventScroll: true });
+        bestCandidate.classList.add('dpad-focused');
+        bestCandidate.scrollIntoView({ block: 'nearest', inline: 'nearest', behavior: 'smooth' });
+      }
+    }
+
+    function initDpadNavigation() {
+      document.addEventListener('keydown', (e) => {
+        const active = document.activeElement;
+        const activeTag = active ? active.tagName : '';
+
+        if (e.key === 'Escape') {
+          if (!document.getElementById('theater-modal').classList.contains('hidden')) {
+            e.preventDefault();
+            closeTheaterPlayer();
+            return;
+          }
+          if (!document.getElementById('boxscore-modal').classList.contains('hidden')) {
+            e.preventDefault();
+            closeBoxscoreModal();
+            return;
+          }
+          if (!document.getElementById('settings-modal').classList.contains('hidden')) {
+            e.preventDefault();
+            closeSettingsModal();
+            return;
+          }
+          if (!document.getElementById('debug-modal').classList.contains('hidden')) {
+            e.preventDefault();
+            closeDebugModal();
+            return;
+          }
+          clearDpadFocusClass();
+          if (active && active.blur) active.blur();
+          return;
+        }
+
+        if (activeTag === 'INPUT') {
+          if (active.type === 'range' && (e.key === 'ArrowLeft' || e.key === 'ArrowRight')) return;
+          if (active.type !== 'range' && ['ArrowLeft', 'ArrowRight'].includes(e.key)) return;
+        }
+        if (activeTag === 'SELECT' && (e.key === 'ArrowUp' || e.key === 'ArrowDown')) {
+          return;
+        }
+
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key)) {
+          e.preventDefault();
+          moveDpadFocus(e.key);
+        } else if (e.key === 'Enter' && active && active.hasAttribute('data-dpad')) {
+          if (activeTag === 'BUTTON') {
+            e.preventDefault();
+            active.click();
+          }
+        }
+      });
+
+      document.addEventListener('pointerdown', () => {
+        clearDpadFocusClass();
+      });
+    }
+
+    function applyTvMode(enabled) {
+      const btn = document.getElementById('tv-mode-btn');
+      document.body.classList.toggle('tv-mode-active', enabled);
+      btn.setAttribute('aria-pressed', String(enabled));
+      if (enabled) {
+        btn.classList.add('tab-active');
+        const firstCardBtn = document.querySelector('#games-grid [data-dpad]');
+        if (firstCardBtn) {
+          clearDpadFocusClass();
+          firstCardBtn.focus();
+          firstCardBtn.classList.add('dpad-focused');
+        }
+      } else {
+        btn.classList.remove('tab-active');
+        clearDpadFocusClass();
+      }
+    }
+
+    /* === TOAST NOTIFICATIES === */
+    function showToast(message) {
+      const container = document.getElementById('toast-container');
+      const toast = document.createElement('div');
+      toast.className = 'pointer-events-auto px-4 py-3 rounded-xl text-sm font-medium shadow-lg border border-[var(--border-subtle)] bg-[var(--bg-card)] flex items-center gap-3 transition-all duration-200';
+      toast.style.color = 'var(--text-primary)';
+      toast.innerHTML = `
+        <span class="w-2 h-2 rounded-sm shrink-0" style="background-color: var(--team-accent);" aria-hidden="true"></span>
+        <span>${message}</span>
+      `;
+
+      container.appendChild(toast);
+      setTimeout(() => {
+        toast.style.opacity = '0';
+        toast.style.transform = 'translateY(6px)';
+        setTimeout(() => toast.remove(), 220);
+      }, 3000);
+    }
+
+    /* === EVENT LISTENERS & INITIALISATIE === */
+    function bindEvents() {
+      // Primaire view tabs
+      document.querySelectorAll('.view-tab').forEach(btn => {
+        btn.addEventListener('click', () => switchView(btn.dataset.view));
+      });
+      document.getElementById('goto-games-btn').addEventListener('click', () => switchView('games'));
+      document.getElementById('podcast-open-settings-btn').addEventListener('click', openSettingsModal);
+
+      // PWA Install knoppen
+      document.getElementById('header-pwa-install-btn').addEventListener('click', triggerPwaInstall);
+      document.getElementById('settings-pwa-install-btn').addEventListener('click', triggerPwaInstall);
+
+      // Team selector
+      document.getElementById('team-selector').addEventListener('change', (e) => {
+        appState.favoriteTeam = e.target.value;
+        saveState();
+        applyTeamBranding(appState.favoriteTeam);
+        renderGames();
+        const team = getTeamById(appState.favoriteTeam);
+        if (team) showToast(`Team-branding ingesteld op ${team.name}.`);
+      });
+
+      document.getElementById('reset-team-btn').addEventListener('click', () => {
+        appState.favoriteTeam = '';
+        document.getElementById('team-selector').value = '';
+        saveState();
+        applyTeamBranding('');
+        renderGames();
+      });
+
+      // Globale spoiler toggle
+      document.getElementById('global-spoiler-btn').addEventListener('click', () => {
+        appState.globalSpoilersHidden = !appState.globalSpoilersHidden;
+        saveState();
+        updateGlobalSpoilerButton();
+        renderGames();
+        renderWatchlist();
+        showToast(appState.globalSpoilersHidden ? 'Alle niet-bekeken scores verborgen.' : 'Alle scores zichtbaar.');
+      });
+
+      // Dark / Light toggle
+      document.getElementById('theme-toggle-btn').addEventListener('click', () => {
+        appState.theme = appState.theme === 'dark' ? 'light' : 'dark';
+        saveState();
+        applyTheme(appState.theme);
+      });
+
+      // Feed source switch & refresh
+      document.getElementById('feed-source-selector').addEventListener('change', (e) => {
+        appState.feedSource = e.target.value;
+        saveState();
+        loadGamesFeed(true);
+      });
+
+      document.getElementById('refresh-feed-btn').addEventListener('click', () => loadGamesFeed(true));
+
+      // Filter tabs
+      document.querySelectorAll('.filter-tab').forEach(btn => {
+        btn.addEventListener('click', () => {
+          appState.activeFilter = btn.dataset.filter;
+          saveState();
+          renderGames();
+        });
+      });
+
+      document.getElementById('clear-filter-btn').addEventListener('click', () => {
+        appState.activeFilter = 'all';
+        saveState();
+        renderGames();
+      });
+
+      // TV Focus testknop
+      document.getElementById('tv-mode-btn').addEventListener('click', () => {
+        appState.tvMode = !appState.tvMode;
+        saveState();
+        applyTvMode(appState.tvMode);
+        showToast(appState.tvMode ? 'TV Focus & Fullscreen Theater actief.' : 'TV Focus uitgeschakeld.');
+      });
+
+      // Kaart-acties
+      document.getElementById('games-grid').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-action]');
+        if (!btn) return;
+        const { action, gameId } = btn.dataset;
+        if (action === 'toggle-spoiler') toggleSingleGameSpoiler(gameId);
+        if (action === 'toggle-watched') markGameAsWatched(gameId, false);
+        if (action === 'toggle-watchlist') toggleWatchLater(gameId);
+        if (action === 'play-recap') openTheaterPlayer(gameId);
+        if (action === 'open-boxscore') openBoxscoreModal(gameId);
+      });
+
+      // Theater Controls
+      document.getElementById('theater-close-btn').addEventListener('click', closeTheaterPlayer);
+      document.getElementById('theater-sim-end-btn').addEventListener('click', finishTheaterAndUnlock);
+      document.getElementById('theater-fallback-finish-btn').addEventListener('click', finishTheaterAndUnlock);
+
+      document.getElementById('theater-mute-btn').addEventListener('click', () => {
+        if (!ytPlayer || typeof ytPlayer.isMuted !== 'function') return;
+        if (ytPlayer.isMuted()) {
+          ytPlayer.unMute();
+          isTheaterMuted = false;
+        } else {
+          ytPlayer.mute();
+          isTheaterMuted = true;
+        }
+        updateTheaterMuteButton();
+      });
+
+      document.getElementById('theater-fullscreen-btn').addEventListener('click', () => {
+        currentTheaterFullscreen = !currentTheaterFullscreen;
+        document.getElementById('theater-modal').classList.toggle('is-tv-fullscreen', currentTheaterFullscreen);
+        document.getElementById('theater-fs-label').textContent = currentTheaterFullscreen ? 'Standaard Formaat' : 'TV Fullscreen';
+      });
+
+      document.getElementById('theater-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'theater-modal') closeTheaterPlayer();
+      });
+
+      // Boxscore Controls
+      document.getElementById('boxscore-close-btn').addEventListener('click', closeBoxscoreModal);
+      document.getElementById('boxscore-guard-cancel-btn').addEventListener('click', closeBoxscoreModal);
+      document.getElementById('boxscore-reveal-confirm-btn').addEventListener('click', () => {
+        if (!currentBoxscoreGameId) return;
+        if (!appState.revealedGameIds.includes(currentBoxscoreGameId)) {
+          appState.revealedGameIds.push(currentBoxscoreGameId);
+          saveState();
+          renderGames();
+        }
+        const game = getGameById(currentBoxscoreGameId);
+        if (game) {
+          document.getElementById('boxscore-spoiler-guard').classList.add('hidden');
+          document.getElementById('boxscore-content').classList.remove('hidden');
+          renderBoxscoreData(game);
+          document.getElementById('bs-tab-away').focus();
+        }
+      });
+
+      document.getElementById('bs-tab-away').addEventListener('click', () => {
+        currentBoxscoreTeamSide = 'away';
+        const game = getGameById(currentBoxscoreGameId);
+        if (game) renderBoxscorePlayers(game);
+      });
+
+      document.getElementById('bs-tab-home').addEventListener('click', () => {
+        currentBoxscoreTeamSide = 'home';
+        const game = getGameById(currentBoxscoreGameId);
+        if (game) renderBoxscorePlayers(game);
+      });
+
+      document.getElementById('boxscore-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'boxscore-modal') closeBoxscoreModal();
+      });
+
+      // Podcast Hub & Mini-Player Controls
+      document.getElementById('refresh-podcasts-btn').addEventListener('click', () => loadPodcastsFeed(true));
+
+      document.getElementById('podcasts-grid').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-pod-action]');
+        if (!btn) return;
+        const { podAction, epId } = btn.dataset;
+        if (podAction === 'play-audio') playPodcastEpisode(epId);
+        if (podAction === 'play-video') openPodcastVideoInTheater(epId);
+      });
+
+      const audioEl = document.getElementById('podcast-audio-el');
+      const seekSlider = document.getElementById('mp-seek-slider');
+      const volumeSlider = document.getElementById('mp-volume-slider');
+
+      document.getElementById('mp-playpause-btn').addEventListener('click', () => {
+        if (!audioEl.src) return;
+        if (audioEl.paused) {
+          audioEl.play().then(() => updateMiniPlayerPlayState(true)).catch(() => {});
+        } else {
+          audioEl.pause();
+          updateMiniPlayerPlayState(false);
+        }
+      });
+
+      document.getElementById('mp-back15-btn').addEventListener('click', () => {
+        audioEl.currentTime = Math.max(0, audioEl.currentTime - 15);
+      });
+
+      document.getElementById('mp-fwd30-btn').addEventListener('click', () => {
+        audioEl.currentTime = Math.min(audioEl.duration || Infinity, audioEl.currentTime + 30);
+      });
+
+      document.getElementById('mp-mute-btn').addEventListener('click', () => {
+        audioEl.muted = !audioEl.muted;
+        updateVolumeIcon(audioEl.volume, audioEl.muted);
+      });
+
+      volumeSlider.addEventListener('input', (e) => {
+        const val = parseFloat(e.target.value);
+        audioEl.volume = val;
+        audioEl.muted = val === 0;
+        appState.podcastVolume = val;
+        saveState();
+        updateVolumeIcon(val, audioEl.muted);
+      });
+
+      seekSlider.addEventListener('input', (e) => {
+        if (!Number.isFinite(audioEl.duration)) return;
+        audioEl.currentTime = (parseFloat(e.target.value) / 100) * audioEl.duration;
+      });
+
+      audioEl.addEventListener('timeupdate', () => {
+        document.getElementById('mp-current-time').textContent = formatTimeSec(audioEl.currentTime);
+        if (Number.isFinite(audioEl.duration) && audioEl.duration > 0) {
+          document.getElementById('mp-duration-time').textContent = formatTimeSec(audioEl.duration);
+          seekSlider.value = String((audioEl.currentTime / audioEl.duration) * 100);
+        }
+      });
+
+      audioEl.addEventListener('ended', () => updateMiniPlayerPlayState(false));
+      document.getElementById('mp-close-btn').addEventListener('click', closeMiniPlayer);
+
+      // Watch Later Acties & Drag-and-Drop
+      const watchContainer = document.getElementById('watchlist-container');
+
+      watchContainer.addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-watch-action]');
+        if (!btn) return;
+        const { watchAction, gameId } = btn.dataset;
+        if (watchAction === 'move-up') moveWatchlistItem(gameId, -1);
+        if (watchAction === 'move-down') moveWatchlistItem(gameId, 1);
+        if (watchAction === 'play') openTheaterPlayer(gameId);
+        if (watchAction === 'remove') toggleWatchLater(gameId);
+      });
+
+      watchContainer.addEventListener('dragstart', (e) => {
+        const item = e.target.closest('.watchlist-item');
+        if (!item) return;
+        draggedWatchId = item.dataset.watchId;
+        item.classList.add('is-dragging');
+        e.dataTransfer.effectAllowed = 'move';
+      });
+
+      watchContainer.addEventListener('dragover', (e) => {
+        e.preventDefault();
+        const item = e.target.closest('.watchlist-item');
+        document.querySelectorAll('.watchlist-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+        if (item && item.dataset.watchId !== draggedWatchId) {
+          item.classList.add('drag-over');
+        }
+      });
+
+      watchContainer.addEventListener('drop', (e) => {
+        e.preventDefault();
+        const targetItem = e.target.closest('.watchlist-item');
+        document.querySelectorAll('.watchlist-item.drag-over').forEach(el => el.classList.remove('drag-over'));
+        if (targetItem && draggedWatchId) {
+          reorderWatchlistByDrop(draggedWatchId, targetItem.dataset.watchId);
+        }
+      });
+
+      watchContainer.addEventListener('dragend', () => {
+        draggedWatchId = null;
+        document.querySelectorAll('.watchlist-item').forEach(el => {
+          el.classList.remove('is-dragging', 'drag-over');
+        });
+      });
+
+      document.getElementById('clear-watchlist-btn').addEventListener('click', () => {
+        appState.watchLaterIds = [];
+        saveState();
+        renderGames();
+        renderWatchlist();
+        showToast('Watch Later wachtrij geleegd.');
+      });
+
+      // Instellingen Modal
+      document.getElementById('settings-open-btn').addEventListener('click', openSettingsModal);
+      document.getElementById('settings-close-btn').addEventListener('click', closeSettingsModal);
+      document.getElementById('settings-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'settings-modal') closeSettingsModal();
+      });
+
+      document.getElementById('setting-default-view').addEventListener('change', (e) => {
+        appState.defaultView = e.target.value;
+        saveState();
+        showToast('Standaard opstartscherm opgeslagen.');
+      });
+
+      document.getElementById('setting-refresh-interval').addEventListener('change', (e) => {
+        appState.refreshIntervalMin = Number(e.target.value) || 30;
+        saveState();
+        setupAutoRefreshTimer();
+        showToast(`Verversingsfrequentie ingesteld op ${appState.refreshIntervalMin} minuten.`);
+      });
+
+      document.getElementById('add-youtube-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nameEl = document.getElementById('yt-channel-name-input');
+        const idEl = document.getElementById('yt-channel-id-input');
+        const name = nameEl.value.trim();
+        const channelId = extractChannelIdFromInput(idEl.value);
+
+        if (!name || !channelId) return;
+        const newId = `custom-yt-${Date.now()}`;
+        appState.customYoutubeChannels.push({ id: newId, name, channelId });
+        saveState();
+        populateFeedSourceSelector();
+        renderSettingsLists();
+        nameEl.value = '';
+        idEl.value = '';
+        showToast(`YouTube-kanaal "${name}" toegevoegd.`);
+      });
+
+      document.getElementById('custom-youtube-list').addEventListener('click', (e) => {
+        const btn = e.target.closest('button[data-remove-yt]');
+        if (!btn) return;
+        const removeId = btn.dataset.removeYt;
+        appState.customYoutubeChannels = appState.customYoutubeChannels.filter(c => c.id !== removeId);
+        if (appState.feedSource === removeId) appState.feedSource = 'nba';
+        saveState();
+        populateFeedSourceSelector();
+        renderSettingsLists();
+        showToast('YouTube-kanaal verwijderd.');
+      });
+
+      // Podcast Feed Toevoegen (incl. trefwoord-filter & YouTube RSS)
+      document.getElementById('add-podcast-form').addEventListener('submit', (e) => {
+        e.preventDefault();
+        const nameEl = document.getElementById('pod-name-input');
+        const filterEl = document.getElementById('pod-filter-input');
+        const urlEl = document.getElementById('pod-url-input');
+        const ytEl = document.getElementById('pod-yt-url-input');
+
+        const name = nameEl.value.trim();
+        const titleFilter = filterEl.value.trim();
+        const audioRssUrl = urlEl.value.trim();
+        const youtubeRssUrl = normalizeYoutubeRssUrl(ytEl.value);
+
+        if (!name || (!audioRssUrl && !youtubeRssUrl)) {
+          showToast('Vul minimaal een naam en een Audio RSS of YouTube RSS in.');
+          return;
+        }
+
+        appState.podcastFeeds.push({
+          id: `pod-${Date.now()}`,
+          name,
+          audioRssUrl,
+          youtubeRssUrl,
+          titleFilter,
+          isDefault: false
+        });
+        saveState();
+        renderSettingsLists();
+        nameEl.value = '';
+        filterEl.value = '';
+        urlEl.value = '';
+        ytEl.value = '';
+        showToast(`Podcast "${name}" toegevoegd.`);
+        loadPodcastsFeed(false);
+      });
+
+      // Podcast Feed Filter Bewerken of Verwijderen
+      document.getElementById('custom-podcast-list').addEventListener('click', (e) => {
+        const removeBtn = e.target.closest('button[data-remove-pod]');
+        if (removeBtn) {
+          const removeId = removeBtn.dataset.removePod;
+          appState.podcastFeeds = appState.podcastFeeds.filter(p => p.id !== removeId);
+          saveState();
+          renderSettingsLists();
+          loadPodcastsFeed(false);
+          showToast('Podcast-feed verwijderd.');
+          return;
+        }
+
+        const saveFilterBtn = e.target.closest('button[data-save-pod-filter]');
+        if (saveFilterBtn) {
+          const podId = saveFilterBtn.dataset.savePodFilter;
+          const input = document.getElementById(`filter-edit-${podId}`);
+          const target = appState.podcastFeeds.find(p => p.id === podId);
+          if (target && input) {
+            target.titleFilter = input.value.trim();
+            saveState();
+            loadPodcastsFeed(true);
+            showToast(`Titel-filter voor "${target.name}" bijgewerkt.`);
+          }
+        }
+      });
+
+      // Backup & Restore
+      document.getElementById('backup-export-btn').addEventListener('click', exportBackupJson);
+      document.getElementById('backup-import-trigger').addEventListener('click', () => {
+        document.getElementById('backup-import-input').click();
+      });
+      document.getElementById('backup-import-input').addEventListener('change', (e) => {
+        const file = e.target.files && e.target.files[0];
+        if (file) importBackupJson(file);
+        e.target.value = '';
+      });
+
+      // Reset spoiler-status
+      document.getElementById('reset-demo-btn').addEventListener('click', () => {
+        appState.globalSpoilersHidden = true;
+        appState.revealedGameIds = [];
+        appState.watchedGameIds = [];
+        saveState();
+        updateGlobalSpoilerButton();
+        renderGames();
+        renderWatchlist();
+        showToast('Alle scores weer netjes verborgen.');
+      });
+
+      // Verborgen Debug Console (5x snel klikken op versienummer)
+      document.getElementById('version-trigger').addEventListener('click', () => {
+        versionClickCount += 1;
+        clearTimeout(versionClickTimer);
+        versionClickTimer = setTimeout(() => { versionClickCount = 0; }, 1800);
+        if (versionClickCount >= 5) {
+          versionClickCount = 0;
+          openDebugModal();
+        }
+      });
+
+      document.getElementById('debug-close-btn').addEventListener('click', closeDebugModal);
+      document.getElementById('debug-modal').addEventListener('click', (e) => {
+        if (e.target.id === 'debug-modal') closeDebugModal();
+      });
+      document.getElementById('debug-copy-btn').addEventListener('click', copyDebugLog);
+      document.getElementById('debug-clear-sw-btn').addEventListener('click', async () => {
+        if ('caches' in window) {
+          const keys = await caches.keys();
+          await Promise.all(keys.map(k => caches.delete(k)));
+        }
+        if ('serviceWorker' in navigator) {
+          const regs = await navigator.serviceWorker.getRegistrations();
+          await Promise.all(regs.map(r => r.update()));
+        }
+        addDebugLog('ServiceWorker', 'Cache geleegd en update aangevraagd.', true);
+        document.getElementById('debug-log-output').textContent = buildDebugReportText();
+        showToast('Service Worker cache vernieuwd.');
+      });
+    }
+
+    function initApp() {
+      addDebugLog('Init', 'CourtSide Hub gestart (v1.3.0-fase4).', true);
+      populateTeamDropdown();
+      populateFeedSourceSelector();
+      applyTheme(appState.theme);
+      applyTeamBranding(appState.favoriteTeam);
+      updateGlobalSpoilerButton();
+      applyTvMode(appState.tvMode);
+
+      activeGames = FALLBACK_NBA_GAMES.map(enrichGameWithBadges);
+      renderGames();
+      renderWatchlist();
+      renderPodcasts();
+
+      switchView(appState.defaultView || 'games');
+
+      bindEvents();
+      initDpadNavigation();
+      setupAutoRefreshTimer();
+      registerServiceWorkerAndConnectivity();
+
+      loadGamesFeed(false);
+      loadPodcastsFeed(false);
+    }
+
+    document.addEventListener('DOMContentLoaded', initApp);
+  </script>
+</body>
+</html>
